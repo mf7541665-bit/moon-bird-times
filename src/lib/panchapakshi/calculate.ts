@@ -53,7 +53,7 @@ export interface PanchapakshiResult {
 
 /** Compute lunar tithi (1..30) at given UTC date. */
 function computeTithi(date: Date): number {
-  const sunLon = Astronomy.EclipticLongitude(Astronomy.Body.Sun, date);
+  const sunLon = Astronomy.SunPosition(date).elon;
   const moonLon = Astronomy.EclipticLongitude(Astronomy.Body.Moon, date);
   const diff = ((moonLon - sunLon) % 360 + 360) % 360;
   return Math.floor(diff / 12) + 1; // 1..30
