@@ -147,5 +147,13 @@
   body {
     background-color: var(--color-background);
     color: var(--color-foreground);
+    font-family: var(--font-tamil);
   }
 }
+
+@utility btn-brand {
+  background: linear-gradient(180deg, var(--brand) 0%, var(--brand-deep) 100%);
+  color: var(--brand-foreground);
+  box-shadow: 0 6px 20px -8px oklch(0.7 0.17 70 / 0.6);
+}
+
