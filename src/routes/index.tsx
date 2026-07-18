@@ -4,7 +4,7 @@ import { useMutation } from "@tanstack/react-query";
 import { useState } from "react";
 import { User, Users, Calendar, Clock, MapPin, Loader2, Sparkles } from "lucide-react";
 import { runPanchapakshi, type PanchapakshiApiResult, type PanchapakshiInput } from "@/lib/panchapakshi/api.functions";
-import { BIRDS, ACTIVITIES, NAKSHATRAS_TA, type ActivityKey, type BirdKey } from "@/lib/panchapakshi/tables";
+import { BIRDS, ACTIVITIES, type ActivityKey, type BirdKey } from "@/lib/panchapakshi/tables";
 import heroImg from "@/assets/panchapakshi-hero.jpg";
 
 export const Route = createFileRoute("/")({
@@ -215,7 +215,7 @@ function Result({ data, name }: { data: PanchapakshiApiResult; name: string }) {
         <h2 className="mt-2 text-3xl font-bold" style={{ color: "var(--brand-deep)" }}>{bird.ta}</h2>
         <p className="text-sm text-muted-foreground">{bird.en}</p>
         <div className="mt-4 grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
-          <Stat label="நட்சத்திரம்" value={NAKSHATRAS_TA[data.nakshatraIndex]} />
+          <Stat label="வாரம்" value={["ஞாயிறு","திங்கள்","செவ்வாய்","புதன்","வியாழன்","வெள்ளி","சனி"][data.weekday]} />
           <Stat label="பக்ஷம்" value={data.paksha === "valarpirai" ? "வளர்பிறை" : "தேய்பிறை"} />
           <Stat label="திதி" value={String(data.tithi)} />
           <Stat label="சூரிய உதயம்" value={fmtTime(data.sunrise, tz)} />
@@ -260,7 +260,6 @@ function ScheduleTable({ title, subtitle, block, tz, birthBird }: { title: strin
           <thead className="bg-secondary/60 text-xs uppercase tracking-wide text-muted-foreground">
             <tr>
               <th className="text-left px-3 py-2">Time</th>
-              <th className="text-left px-3 py-2">Ruling activity</th>
               {(["vulture", "owl", "crow", "cock", "peacock"] as BirdKey[]).map((b) => (
                 <th key={b} className={`text-left px-3 py-2 ${b === birthBird ? "text-brand-deep" : ""}`} style={b === birthBird ? { color: "var(--brand-deep)" } : undefined}>
                   {BIRD_EMOJI[b]} {BIRDS[b].ta}
@@ -270,13 +269,9 @@ function ScheduleTable({ title, subtitle, block, tz, birthBird }: { title: strin
           </thead>
           <tbody>
             {block.slots.map((s, i) => {
-              const rulingAct = ACTIVITIES[s.activity];
               return (
                 <tr key={i} className="border-t border-border/60">
                   <td className="px-3 py-2 whitespace-nowrap text-xs">{fmtTime(s.start, tz)} – {fmtTime(s.end, tz)}</td>
-                  <td className="px-3 py-2">
-                    <span className={`inline-block rounded-md border px-2 py-0.5 text-xs ${QUALITY_STYLES[rulingAct.quality]}`}>{rulingAct.ta}</span>
-                  </td>
                   {(["vulture", "owl", "crow", "cock", "peacock"] as BirdKey[]).map((b) => {
                     const a = s.birdActivities[b] as ActivityKey;
                     const act = ACTIVITIES[a];
