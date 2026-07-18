@@ -4,7 +4,7 @@ import { useMutation } from "@tanstack/react-query";
 import { useState } from "react";
 import { User, Users, Calendar, Clock, MapPin, Loader2, Sparkles, ChevronLeft, ChevronRight, ArrowLeft } from "lucide-react";
 import { runPanchapakshi, type PanchapakshiApiResult, type PanchapakshiInput } from "@/lib/panchapakshi/api.functions";
-import { BIRDS, ACTIVITIES, type ActivityKey, type BirdKey } from "@/lib/panchapakshi/tables";
+import { BIRDS, paksha, ACTIVITIES, type ActivityKey, type BirdKey } from "@/lib/panchapakshi/tables";
 import heroImg from "@/assets/panchapakshi-hero.jpg";
 
 export const Route = createFileRoute("/")({
@@ -303,42 +303,91 @@ function InfoRow({ label, value }: { label: string; value: string }) {
 /* ============================================================
  *  SCREEN 3 — Activity cards (Pakal / Iravu toggle)
  * ============================================================ */
-function ActivitiesScreen({ data, viewDate, onViewDateChange, pending, dayNight, setDayNight, onBack, onOpenSlot }: {
-  data: PanchapakshiApiResult; viewDate: string; onViewDateChange: (v: string) => void; pending: boolean;
-  dayNight: "day" | "night"; setDayNight: (v: "day" | "night") => void;
-  onBack: () => void; onOpenSlot: (slotIdx: number) => void;
+function ActivitiesScreen({
+  data,
+  viewDate,
+  onViewDateChange,
+  pending,
+  dayNight,
+  setDayNight,
+  onBack,
+  onOpenSlot
+}: {
+  data: PanchapakshiApiResult;
+  viewDate: string;
+  onViewDateChange: (v: string) => void;
+  pending: boolean;
+  dayNight: "day" | "night";
+  setDayNight: (v: "day" | "night") => void;
+  onBack: () => void;
+  onOpenSlot: (slotIdx: number) => void;
 }) {
   const block = dayNight === "day" ? data.day : data.night;
+
   const tz = data.input.tzOffsetMin;
   const birthBird = data.birthBird;
+
+  // ✅ 4 COMBINATION SEQUENCE
+  const SEQUENCES = {
+    valarpirai: {
+      day:   ["eat", "walk", "rule", "sleep", "die"],
+      night: ["die", "walk", "sleep", "eat", "rule"]
+    },
+    theipirai: {
+      day:   ["walk", "eat", "die", "sleep", "rule"],
+      night: ["eat", "sleep", "walk", "die", "rule"]
+    }
+  };
+
+  // 👉 Pick correct sequence
+  const SEQ =
+    SEQUENCES[data.paksha === "valarpirai" ? "valarpirai" : "theipirai"][dayNight];
+
+  const startIndex =
+    typeof block.startIndex === "number" ? block.startIndex : 0;
+
+  // ✅ Apply sequence rotation
+  const slots = (block.slots || []).map((s, i) => {
+    const activity = SEQ[(startIndex + i) % 5];
+
+    return {
+      ...s,
+      activity,
+      birdActivity: s?.birdActivities?.[birthBird] ?? activity
+    };
+  });
 
   return (
     <main className="min-h-screen bg-background pb-24">
       <TopBar title="பட்சியின் நிலைகள்" onBack={onBack} />
 
       <div className="mx-auto max-w-2xl px-5 mt-6">
+        {/* Toggle */}
         <div className="flex items-center justify-center gap-3 mb-5">
           <Toggle active={dayNight === "day"} onClick={() => setDayNight("day")} label="பகல்" />
           <Toggle active={dayNight === "night"} onClick={() => setDayNight("night")} label="இரவு" />
         </div>
 
+        {/* Date + Paksha */}
         <div className="text-center mb-4 text-xs text-muted-foreground">
-          {viewDate.split("-").reverse().join("-")} · {data.paksha === "valarpirai" ? "வளர் பிறை" : "தேய் பிறை"}
+          {viewDate.split("-").reverse().join("-")} ·{" "}
+          {data.paksha === "valarpirai" ? "வளர் பிறை" : "தேய் பிறை"}
         </div>
 
+        {/* Slots */}
         <div className="rounded-3xl bg-rose-50/60 border border-rose-100 p-4">
           <div className="grid grid-cols-2 gap-4">
-            {block.slots.map((s, i) => {
-              const act = s.birdActivities[birthBird];
-              // Center the 3rd (index 2) card by making it span 2 cols
+            {slots.map((s, i) => {
               const isCenter = i === 2;
+
               return (
                 <button
                   key={i}
                   onClick={() => onOpenSlot(i)}
                   className={`text-center py-3 ${isCenter ? "col-span-2" : ""}`}
                 >
-                  <ActivityLabel activity={act} />
+                  <ActivityLabel activity={s.birdActivity} />
+
                   <p className="mt-2 text-xs font-medium text-foreground">
                     {fmtTime(s.start, tz)} - {fmtTime(s.end, tz)}
                   </p>
@@ -348,22 +397,43 @@ function ActivitiesScreen({ data, viewDate, onViewDateChange, pending, dayNight,
           </div>
         </div>
 
+        {/* Loader */}
         {pending && (
           <div className="mt-4 flex justify-center">
             <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
           </div>
         )}
 
+        {/* Info */}
         <div className="mt-6 rounded-2xl border border-border/60 bg-card p-4 text-xs text-muted-foreground leading-relaxed">
-          <p><b style={{ color: "var(--brand-deep)" }}>{BIRD_EMOJI[birthBird]} {BIRDS[birthBird].ta}</b> — உங்கள் ஜென்ம பட்சி. நேர அட்டவணை மேலே காட்டப்பட்ட {dayNight === "day" ? "பகல்" : "இரவு"} செயல்பாடு உங்கள் பட்சிக்கு உரியது.</p>
-          <p className="mt-2">ஒரு நிலையை தட்டி உள்ளிட்டு சூட்சம பட்சி காணவும்.</p>
+          <p>
+            <b style={{ color: "var(--brand-deep)" }}>
+              {BIRD_EMOJI[birthBird]} {BIRDS[birthBird].ta}
+            </b>{" "}
+            — உங்கள் ஜென்ம பட்சி. மேலே காட்டப்பட்ட{" "}
+            {dayNight === "day" ? "பகல்" : "இரவு"} ·{" "}
+            {data.paksha === "valarpirai" ? "வளர் பிறை" : "தேய் பிறை"} செயல்பாடு.
+          </p>
+
+          <p className="mt-2">
+            ஒரு நிலையை தட்டி உள்ளிட்டு சூட்சம பட்சி காணவும்.
+          </p>
         </div>
 
-        <button onClick={onBack} className="mt-6 w-full rounded-full py-2.5 text-sm border border-input font-semibold">
+        {/* Change date */}
+        <button
+          onClick={onBack}
+          className="mt-6 w-full rounded-full py-2.5 text-sm border border-input font-semibold"
+        >
           தேதி மாற்று
         </button>
+
         <div className="mt-3">
-          <DateNavigatorInline viewDate={viewDate} onViewDateChange={onViewDateChange} pending={pending} />
+          <DateNavigatorInline
+            viewDate={viewDate}
+            onViewDateChange={onViewDateChange}
+            pending={pending}
+          />
         </div>
       </div>
     </main>
@@ -401,28 +471,83 @@ function Toggle({ active, onClick, label }: { active: boolean; onClick: () => vo
 /* ============================================================
  *  SCREEN 4 — Sub-slot (சூட்சம பட்சி) detail
  * ============================================================ */
-function DetailScreen({ data, selected, onBack }: { data: PanchapakshiApiResult; selected: NonNullable<Selected>; onBack: () => void }) {
+function DetailScreen({
+  data,
+  selected,
+  onBack,
+}: {
+  data: PanchapakshiApiResult;
+  selected: NonNullable<Selected>;
+  onBack: () => void;
+}) {
   const block = selected.block === "day" ? data.day : data.night;
   const slot = block.slots[selected.slotIdx];
+
   const tz = data.input.tzOffsetMin;
   const birthBird = data.birthBird;
   const mainAct = slot.birdActivities[birthBird];
 
-  // Sub-slot activity progression per Panchapakshi tradition:
-  //   ஊண் (eat) → நடை (walk) → துயில் (sleep) → சாவு (die) → அரசு (rule)
-  // Sub-durations use the classical 5:4:2:1.5:3.5 ratio (of 16 units) — this
-  // matches the printed sub-nazhigai timings.
-  const SUB_ORDER: ActivityKey[] = ["eat", "walk", "sleep", "die", "rule"];
-  const SUB_WEIGHTS = [5, 4, 2, 1.5, 3.5];
-  const totalWeight = SUB_WEIGHTS.reduce((a, b) => a + b, 0);
-  const totalMs = new Date(slot.end).getTime() - new Date(slot.start).getTime();
+  // ✅ Paksha
+  const paksha = data.paksha as "valarpirai" | "theipirai";
+
+  // ✅ Day / Night
+  const dayType = selected.block as "day" | "night";
+
+  // ✅ Correct Sub-Order
+  const SUB_ORDERS = {
+    valarpirai: ["eat", "walk", "rule", "sleep", "die"],
+    theipirai: ["sleep", "walk", "die", "rule", "eat"],
+  } as const;
+
+  const SUB_ORDER: ActivityKey[] = SUB_ORDERS[paksha];
+
+  // ✅ Exact Minutes (Replace with your chart values if needed)
+  const SUB_DURATION_MINUTES: Record<
+    "valarpirai" | "theipirai",
+    Record<"day" | "night", number[]>
+  > = {
+    valarpirai: {
+      day: [30, 36, 48, 18, 12],
+      night: [30, 30, 24, 24, 36],
+    },
+    theipirai: {
+      day: [12, 36, 30, 18, 48],
+      night: [18, 42, 24, 18, 42],
+    },
+  };
+
+  const DURATIONS = SUB_DURATION_MINUTES[paksha][dayType];
+
+  // ✅ Generate Sub Slots using MINUTES
   let cursor = new Date(slot.start).getTime();
+
   const subSlots = SUB_ORDER.map((act, i) => {
     const start = new Date(cursor);
-    cursor += (totalMs * SUB_WEIGHTS[i]) / totalWeight;
+
+    cursor += DURATIONS[i] * 60 * 1000; // ✅ minutes → milliseconds
+
     const end = new Date(cursor);
-    return { activity: act, start, end };
+
+    return {
+      activity: act,
+      start,
+      end,
+    };
   });
+
+  // ✅ Optional validation (VERY IMPORTANT)
+  const totalSlotMinutes =
+    (new Date(slot.end).getTime() -
+      new Date(slot.start).getTime()) /
+    60000;
+
+  const sum = DURATIONS.reduce((a, b) => a + b, 0);
+
+  if (Math.abs(sum - totalSlotMinutes) > 0.5) {
+    console.warn(
+      "⚠️ Sub-slot minutes mismatch. Check your Panchapakshi table values."
+    );
+  }
 
   return (
     <main className="min-h-screen bg-background pb-16">
