@@ -477,17 +477,31 @@ function TopBar({ title, onBack }: { title: string; onBack?: () => void }) {
   );
 }
 
+const WEEKDAY_TA = ["ஞாயிறு","திங்கள்","செவ்வாய்","புதன்","வியாழன்","வெள்ளி","சனி"];
+const WEEKDAY_EN = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
+const MONTHS_EN = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+
+function ymdParts(ymd: string) {
+  const [y, m, d] = ymd.split("-").map(Number);
+  const dt = new Date(y, m - 1, d);
+  return { y, m, d, weekday: dt.getDay(), monthName: MONTHS_EN[m - 1] };
+}
+
 function DateNavigator({ viewDate, onViewDateChange, pending, isToday }: { viewDate: string; onViewDateChange: (v: string) => void; pending: boolean; isToday: boolean }) {
+  const p = ymdParts(viewDate);
   return (
     <div className="relative overflow-hidden pt-6 pb-14" style={{ background: "var(--brand)" }}>
       <div className="mx-auto max-w-2xl px-5 text-center" style={{ color: "var(--brand-foreground)" }}>
         <div className="inline-flex items-center gap-2 text-xl font-bold">
           <Calendar className="h-5 w-5" />
-          <span>{viewDate.split("-").reverse().join("-")}</span>
+          <span>{`${p.d.toString().padStart(2,"0")} ${p.monthName} ${p.y}`}</span>
           {isToday && <span className="text-[10px] uppercase font-bold px-2 py-0.5 rounded-full bg-card" style={{ color: "var(--brand-deep)" }}>Today</span>}
           {pending && <Loader2 className="h-4 w-4 animate-spin" />}
         </div>
-        <div className="mt-5 mx-auto inline-flex items-center gap-1 rounded-full bg-white p-1 shadow-lg">
+        <div className="mt-1 text-sm opacity-90 font-semibold">
+          {WEEKDAY_TA[p.weekday]} · {WEEKDAY_EN[p.weekday]}
+        </div>
+        <div className="mt-4 mx-auto inline-flex items-center gap-1 rounded-full bg-white p-1 shadow-lg">
           <button
             type="button"
             onClick={() => onViewDateChange(shiftYmd(viewDate, -1))}
@@ -497,7 +511,7 @@ function DateNavigator({ viewDate, onViewDateChange, pending, isToday }: { viewD
           >
             <ChevronLeft className="h-4 w-4" /> முந்தைய<br />தேதி
           </button>
-          <label className="inline-flex items-center px-3 py-2 text-sm font-bold cursor-pointer" style={{ color: "var(--brand-deep)" }}>
+          <label className="inline-flex items-center px-3 py-2 text-sm font-bold cursor-pointer" style={{ color: "var(--brand-deep)" }} title="Pick date">
             <input type="date" value={viewDate} onChange={(e) => onViewDateChange(e.target.value)} className="sr-only" aria-label="Pick date" />
             <Calendar className="h-4 w-4" />
           </label>
@@ -510,6 +524,16 @@ function DateNavigator({ viewDate, onViewDateChange, pending, isToday }: { viewD
           >
             அடுத்த<br />தேதி <ChevronRight className="h-4 w-4" />
           </button>
+        </div>
+        <div className="mt-3">
+          <input
+            type="date"
+            value={viewDate}
+            onChange={(e) => onViewDateChange(e.target.value)}
+            className="rounded-full bg-white px-4 py-1.5 text-sm font-semibold shadow"
+            style={{ color: "var(--brand-deep)" }}
+            aria-label="Select date"
+          />
         </div>
       </div>
       {/* Curved bottom */}
