@@ -27,6 +27,14 @@ const QUALITY_STYLES: Record<string, string> = {
   worst: "bg-rose-100 text-rose-800 border-rose-300",
 };
 
+function todayLocalYmd() {
+  const d = new Date();
+  const y = d.getFullYear();
+  const m = (d.getMonth() + 1).toString().padStart(2, "0");
+  const day = d.getDate().toString().padStart(2, "0");
+  return `${y}-${m}-${day}`;
+}
+
 function PanchapakshiPage() {
   const runFn = useServerFn(runPanchapakshi);
   const mut = useMutation({ mutationFn: (data: PanchapakshiInput) => runFn({ data }) });
@@ -40,9 +48,9 @@ function PanchapakshiPage() {
   const [minute, setMinute] = useState("");
   const [ampm, setAmpm] = useState<"AM" | "PM">("AM");
   const [place, setPlace] = useState("");
+  const [viewDate, setViewDate] = useState<string>(todayLocalYmd());
 
-  function onSubmit(e: React.FormEvent) {
-    e.preventDefault();
+  function submit(vd: string) {
     mut.mutate({
       name,
       gender,
@@ -53,8 +61,20 @@ function PanchapakshiPage() {
       minute: parseInt(minute, 10),
       ampm,
       place,
+      viewDate: vd,
     });
   }
+
+  function onSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    submit(viewDate);
+  }
+
+  function onViewDateChange(v: string) {
+    setViewDate(v);
+    if (mut.data) submit(v); // re-fetch schedule for the new date
+  }
+
 
   return (
     <main className="min-h-screen bg-background">
