@@ -93,22 +93,24 @@ export function computePanchapakshi(input: BirthInput): PanchapakshiResult {
   const birthPaksha: Paksha = birthTithi <= 15 ? "valarpirai" : "theipirai";
   const birthBird = birthBirdFromName(input.name, birthPaksha);
 
-  // Schedule is computed for the view-date (defaults to birth date)
-  const viewLocalIso = input.viewDateLocal
-    ? `${input.viewDateLocal}T06:00:00`
-    : input.isoLocal;
-  const viewLocal = new Date(viewLocalIso);
-  const viewUtc = new Date(viewLocal.getTime() - input.tzOffsetMin * 60_000);
+  // Schedule is computed for the view-date (defaults to birth date, local at birth-place)
+  let startOfLocalDayUtc: Date;
+  if (input.viewDateLocal) {
+    const [y, m, d] = input.viewDateLocal.split("-").map(Number);
+    startOfLocalDayUtc = new Date(Date.UTC(y, m - 1, d, 0, 0, 0) - input.tzOffsetMin * 60_000);
+  } else {
+    const localMs = birthLocal.getTime();
+    const bl = new Date(localMs);
+    startOfLocalDayUtc = new Date(
+      Date.UTC(bl.getUTCFullYear(), bl.getUTCMonth(), bl.getUTCDate(), 0, 0, 0) -
+        input.tzOffsetMin * 60_000,
+    );
+  }
 
   const observer = new Astronomy.Observer(input.latitude, input.longitude, 0);
 
-  // Find sunrise on the view day (most recent sunrise ≤ view instant).
-  let sunrise = findSunEvent(new Date(viewUtc.getTime() - 26 * 3600_000), observer, +1);
-  while (true) {
-    const next = findSunEvent(new Date(sunrise.getTime() + 3600_000), observer, +1);
-    if (next.getTime() <= viewUtc.getTime()) sunrise = next;
-    else break;
-  }
+  // First sunrise on/after the local-day start — precise to a second via SearchRiseSet.
+  const sunrise = findSunEvent(startOfLocalDayUtc, observer, +1);
   const sunset = findSunEvent(sunrise, observer, -1);
   const nextSunrise = findSunEvent(sunset, observer, +1);
 
