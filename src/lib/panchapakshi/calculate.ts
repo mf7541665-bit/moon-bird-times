@@ -18,6 +18,9 @@ export interface BirthInput {
   tzOffsetMin: number;
   latitude: number;
   longitude: number;
+  /** Optional: view date (yyyy-mm-dd, local at birth place) to compute schedule for.
+   *  Defaults to the birth date itself. */
+  viewDateLocal?: string;
 }
 
 export interface DayBlock {
@@ -82,26 +85,37 @@ function buildBlock(
 }
 
 export function computePanchapakshi(input: BirthInput): PanchapakshiResult {
-  const local = new Date(input.isoLocal);
-  const utc = new Date(local.getTime() - input.tzOffsetMin * 60_000);
+  const birthLocal = new Date(input.isoLocal);
+  const birthUtc = new Date(birthLocal.getTime() - input.tzOffsetMin * 60_000);
 
-  const tithi = computeTithi(utc);
-  const paksha: Paksha = tithi <= 15 ? "valarpirai" : "theipirai";
-  const birthBird = birthBirdFromName(input.name, paksha);
+  // Birth bird from birth-date paksha
+  const birthTithi = computeTithi(birthUtc);
+  const birthPaksha: Paksha = birthTithi <= 15 ? "valarpirai" : "theipirai";
+  const birthBird = birthBirdFromName(input.name, birthPaksha);
+
+  // Schedule is computed for the view-date (defaults to birth date)
+  const viewLocalIso = input.viewDateLocal
+    ? `${input.viewDateLocal}T06:00:00`
+    : input.isoLocal;
+  const viewLocal = new Date(viewLocalIso);
+  const viewUtc = new Date(viewLocal.getTime() - input.tzOffsetMin * 60_000);
 
   const observer = new Astronomy.Observer(input.latitude, input.longitude, 0);
 
-  // Find sunrise on the day of birth (most recent sunrise ≤ birth instant).
-  let sunrise = findSunEvent(new Date(utc.getTime() - 26 * 3600_000), observer, +1);
+  // Find sunrise on the view day (most recent sunrise ≤ view instant).
+  let sunrise = findSunEvent(new Date(viewUtc.getTime() - 26 * 3600_000), observer, +1);
   while (true) {
     const next = findSunEvent(new Date(sunrise.getTime() + 3600_000), observer, +1);
-    if (next.getTime() <= utc.getTime()) sunrise = next;
+    if (next.getTime() <= viewUtc.getTime()) sunrise = next;
     else break;
   }
   const sunset = findSunEvent(sunrise, observer, -1);
   const nextSunrise = findSunEvent(sunset, observer, +1);
 
-  // Weekday in local timezone at sunrise (Panchapakshi day starts at sunrise).
+  // Tithi/paksha for schedule: at sunrise of view day
+  const tithi = computeTithi(sunrise);
+  const paksha: Paksha = tithi <= 15 ? "valarpirai" : "theipirai";
+
   const localSunrise = new Date(sunrise.getTime() + input.tzOffsetMin * 60_000);
   const weekday = localSunrise.getUTCDay();
 
