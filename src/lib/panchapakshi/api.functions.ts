@@ -13,6 +13,7 @@ const InputSchema = z.object({
   ampm: z.enum(["AM", "PM"]),
   place: z.string().trim().min(1).max(200),
   tzOffsetMin: z.number().int().min(-720).max(840).optional(),
+  viewDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
 });
 
 export type PanchapakshiInput = z.infer<typeof InputSchema>;
@@ -50,6 +51,7 @@ export const runPanchapakshi = createServerFn({ method: "POST" })
       tzOffsetMin,
       latitude: geo.lat,
       longitude: geo.lon,
+      viewDateLocal: data.viewDate,
     });
 
     const serializeBlock = (b: typeof result.day) => ({
