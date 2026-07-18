@@ -33,9 +33,10 @@ export const runPanchapakshi = createServerFn({ method: "POST" })
   .inputValidator((data: unknown) => InputSchema.parse(data))
   .handler(async ({ data }) => {
     const geo = await geocode(data.place);
-    // Default IST if not provided (most users). Better: derive from timezone db,
-    // but longitude approximation works for a birth-chart precision.
-    const tzOffsetMin = data.tzOffsetMin ?? 330;
+    // Timezone: use provided; else India-band gets IST; else approximate from longitude.
+    const inIndia = geo.lat >= 6 && geo.lat <= 37 && geo.lon >= 68 && geo.lon <= 98;
+    const tzOffsetMin =
+      data.tzOffsetMin ?? (inIndia ? 330 : Math.round((geo.lon / 15) * 2) * 30);
 
     let hour24 = data.hour % 12;
     if (data.ampm === "PM") hour24 += 12;
