@@ -3,7 +3,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { useMutation } from "@tanstack/react-query";
 import { useState } from "react";
 import { User, Users, Calendar, Clock, MapPin, Loader2, Sparkles } from "lucide-react";
-import { runPanchapakshi, type PanchapakshiApiResult } from "@/lib/panchapakshi/api.functions";
+import { runPanchapakshi, type PanchapakshiApiResult, type PanchapakshiInput } from "@/lib/panchapakshi/api.functions";
 import { BIRDS, ACTIVITIES, NAKSHATRAS_TA, type ActivityKey, type BirdKey } from "@/lib/panchapakshi/tables";
 import heroImg from "@/assets/panchapakshi-hero.jpg";
 
@@ -29,7 +29,7 @@ const QUALITY_STYLES: Record<string, string> = {
 
 function PanchapakshiPage() {
   const runFn = useServerFn(runPanchapakshi);
-  const mut = useMutation({ mutationFn: (data: Parameters<typeof runFn>[0]["data"]) => runFn({ data }) });
+  const mut = useMutation({ mutationFn: (data: PanchapakshiInput) => runFn({ data }) });
 
   const [name, setName] = useState("");
   const [gender, setGender] = useState<"male" | "female">("male");
