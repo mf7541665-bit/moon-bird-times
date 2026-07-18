@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useMutation } from "@tanstack/react-query";
 import { useState } from "react";
-import { User, Users, Calendar, Clock, MapPin, Loader2, Sparkles, ChevronLeft, ChevronRight } from "lucide-react";
+import { User, Users, Calendar, Clock, MapPin, Loader2, Sparkles, ChevronLeft, ChevronRight, ArrowLeft } from "lucide-react";
 import { runPanchapakshi, type PanchapakshiApiResult, type PanchapakshiInput } from "@/lib/panchapakshi/api.functions";
 import { BIRDS, ACTIVITIES, type ActivityKey, type BirdKey } from "@/lib/panchapakshi/tables";
 import heroImg from "@/assets/panchapakshi-hero.jpg";
@@ -19,12 +19,20 @@ const BIRD_EMOJI: Record<BirdKey, string> = {
   peacock: "🦚",
 };
 
-const QUALITY_STYLES: Record<string, string> = {
-  excellent: "bg-emerald-100 text-emerald-800 border-emerald-300",
-  good: "bg-lime-100 text-lime-800 border-lime-300",
-  neutral: "bg-slate-100 text-slate-700 border-slate-300",
-  bad: "bg-orange-100 text-orange-800 border-orange-300",
-  worst: "bg-rose-100 text-rose-800 border-rose-300",
+// Activity → semantic color (green = auspicious, red = inauspicious, amber = neutral)
+const ACT_COLOR: Record<ActivityKey, string> = {
+  eat: "text-emerald-700",
+  walk: "text-emerald-700",
+  rule: "text-emerald-700",
+  sleep: "text-orange-600",
+  die: "text-red-600",
+};
+const ACT_UNDERLINE: Record<ActivityKey, string> = {
+  eat: "bg-emerald-600",
+  walk: "bg-emerald-600",
+  rule: "bg-emerald-600",
+  sleep: "bg-orange-500",
+  die: "bg-red-600",
 };
 
 function todayLocalYmd() {
@@ -45,9 +53,16 @@ function shiftYmd(ymd: string, days: number) {
   return `${yy}-${mm}-${dd}`;
 }
 
+type Screen = "form" | "info" | "activities" | "detail";
+type Selected = { block: "day" | "night"; slotIdx: number } | null;
+
 function PanchapakshiPage() {
   const runFn = useServerFn(runPanchapakshi);
   const mut = useMutation({ mutationFn: (data: PanchapakshiInput) => runFn({ data }) });
+
+  const [screen, setScreen] = useState<Screen>("form");
+  const [dayNight, setDayNight] = useState<"day" | "night">("day");
+  const [selected, setSelected] = useState<Selected>(null);
 
   const [name, setName] = useState("");
   const [gender, setGender] = useState<"male" | "female">("male");
@@ -60,121 +75,165 @@ function PanchapakshiPage() {
   const [place, setPlace] = useState("");
   const [viewDate, setViewDate] = useState<string>(todayLocalYmd());
 
-  function submit(vd: string) {
-    mut.mutate({
-      name,
-      gender,
-      day: parseInt(day, 10),
-      month: parseInt(month, 10),
-      year: parseInt(year, 10),
-      hour: parseInt(hour, 10),
-      minute: parseInt(minute, 10),
-      ampm,
-      place,
-      viewDate: vd,
-    });
+  function submit(vd: string, advance: boolean) {
+    mut.mutate(
+      {
+        name, gender,
+        day: parseInt(day, 10),
+        month: parseInt(month, 10),
+        year: parseInt(year, 10),
+        hour: parseInt(hour, 10),
+        minute: parseInt(minute, 10),
+        ampm, place, viewDate: vd,
+      },
+      { onSuccess: () => { if (advance) setScreen("info"); } },
+    );
   }
 
   function onSubmit(e: React.FormEvent) {
     e.preventDefault();
-    submit(viewDate);
+    submit(viewDate, true);
   }
 
   function onViewDateChange(v: string) {
     setViewDate(v);
-    if (mut.data) submit(v); // re-fetch schedule for the new date
+    if (mut.data) submit(v, false);
   }
 
+  const data = mut.data;
 
+  if (screen === "form" || !data) {
+    return (
+      <FormScreen
+        onSubmit={onSubmit}
+        pending={mut.isPending}
+        error={mut.isError ? (mut.error as Error).message : null}
+        {...{ name, setName, gender, setGender, day, setDay, month, setMonth, year, setYear, hour, setHour, minute, setMinute, ampm, setAmpm, place, setPlace }}
+      />
+    );
+  }
+
+  if (screen === "info") {
+    return (
+      <InfoScreen
+        data={data}
+        name={name}
+        place={place}
+        viewDate={viewDate}
+        onViewDateChange={onViewDateChange}
+        pending={mut.isPending}
+        onBack={() => setScreen("form")}
+        onNext={() => setScreen("activities")}
+      />
+    );
+  }
+
+  if (screen === "activities") {
+    return (
+      <ActivitiesScreen
+        data={data}
+        viewDate={viewDate}
+        onViewDateChange={onViewDateChange}
+        pending={mut.isPending}
+        dayNight={dayNight}
+        setDayNight={setDayNight}
+        onBack={() => setScreen("info")}
+        onOpenSlot={(slotIdx) => { setSelected({ block: dayNight, slotIdx }); setScreen("detail"); }}
+      />
+    );
+  }
+
+  // detail
+  return (
+    <DetailScreen
+      data={data}
+      selected={selected!}
+      onBack={() => setScreen("activities")}
+    />
+  );
+}
+
+/* ============================================================
+ *  SCREEN 1 — Form
+ * ============================================================ */
+function FormScreen(props: {
+  onSubmit: (e: React.FormEvent) => void;
+  pending: boolean;
+  error: string | null;
+  name: string; setName: (v: string) => void;
+  gender: "male" | "female"; setGender: (v: "male" | "female") => void;
+  day: string; setDay: (v: string) => void;
+  month: string; setMonth: (v: string) => void;
+  year: string; setYear: (v: string) => void;
+  hour: string; setHour: (v: string) => void;
+  minute: string; setMinute: (v: string) => void;
+  ampm: "AM" | "PM"; setAmpm: (v: "AM" | "PM") => void;
+  place: string; setPlace: (v: string) => void;
+}) {
+  const { onSubmit, pending, error } = props;
   return (
     <main className="min-h-screen bg-background">
-      <header className="bg-brand py-8 px-4 text-center shadow-sm" style={{ background: "var(--brand)" }}>
-        <h1 className="text-2xl sm:text-3xl font-bold text-brand-foreground" style={{ color: "var(--brand-foreground)" }}>
-          பஞ்சபட்சி சாஸ்திரம்
-        </h1>
-        <p className="mt-1 text-sm opacity-80">Pancha Pakshi Form</p>
-      </header>
-
+      <TopBar title="Pancha Pakshi Form" />
       <div className="mx-auto max-w-2xl px-4 -mt-6 pb-16">
         <div className="rounded-3xl bg-card shadow-xl p-6 sm:p-8 border border-border/60">
           <form onSubmit={onSubmit} className="space-y-6">
             <Field label="பெயர்">
               <IconInput icon={<User className="h-5 w-5" />}>
-                <input
-                  required
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  placeholder="பெயரை உள்ளிடவும்"
-                  className="w-full bg-transparent outline-none text-sm"
-                  maxLength={100}
-                />
+                <input required value={props.name} onChange={(e) => props.setName(e.target.value)} placeholder="பெயரை உள்ளிடவும்" className="w-full bg-transparent outline-none text-sm" maxLength={100} />
               </IconInput>
             </Field>
 
             <Field label="பாலினம்">
               <div className="flex items-center gap-6">
                 <Users className="h-5 w-5 text-muted-foreground" />
-                <Radio checked={gender === "male"} onChange={() => setGender("male")} label="ஆண்" />
-                <Radio checked={gender === "female"} onChange={() => setGender("female")} label="பெண்" />
+                <Radio checked={props.gender === "male"} onChange={() => props.setGender("male")} label="ஆண்" />
+                <Radio checked={props.gender === "female"} onChange={() => props.setGender("female")} label="பெண்" />
               </div>
             </Field>
 
             <Field label="பிறந்த தேதி">
               <div className="flex items-center gap-3">
                 <Calendar className="h-5 w-5 text-muted-foreground shrink-0" />
-                <NumBox value={day} onChange={setDay} placeholder="நாள்" min={1} max={31} />
-                <NumBox value={month} onChange={setMonth} placeholder="மாதம்" min={1} max={12} />
-                <NumBox value={year} onChange={setYear} placeholder="ஆண்டு" min={1900} max={2100} wide />
+                <NumBox value={props.day} onChange={props.setDay} placeholder="நாள்" min={1} max={31} />
+                <NumBox value={props.month} onChange={props.setMonth} placeholder="மாதம்" min={1} max={12} />
+                <NumBox value={props.year} onChange={props.setYear} placeholder="ஆண்டு" min={1900} max={2100} wide />
               </div>
             </Field>
 
             <Field label="பிறந்த நேரம்">
               <div className="flex items-center gap-3">
                 <Clock className="h-5 w-5 text-muted-foreground shrink-0" />
-                <NumBox value={hour} onChange={setHour} placeholder="மணி" min={1} max={12} />
-                <NumBox value={minute} onChange={setMinute} placeholder="நிமிடம்" min={0} max={59} />
+                <NumBox value={props.hour} onChange={props.setHour} placeholder="மணி" min={1} max={12} />
+                <NumBox value={props.minute} onChange={props.setMinute} placeholder="நிமிடம்" min={0} max={59} />
                 <div className="flex rounded-xl border border-input overflow-hidden">
-                  <button type="button" onClick={() => setAmpm("AM")} className={`px-3 py-2 text-sm ${ampm === "AM" ? "bg-brand text-brand-foreground" : "bg-transparent"}`} style={ampm === "AM" ? { background: "var(--brand)", color: "var(--brand-foreground)" } : undefined}>AM</button>
-                  <button type="button" onClick={() => setAmpm("PM")} className={`px-3 py-2 text-sm ${ampm === "PM" ? "bg-brand text-brand-foreground" : "bg-transparent"}`} style={ampm === "PM" ? { background: "var(--brand)", color: "var(--brand-foreground)" } : undefined}>PM</button>
+                  <button type="button" onClick={() => props.setAmpm("AM")} className={`px-3 py-2 text-sm ${props.ampm === "AM" ? "" : "bg-transparent"}`} style={props.ampm === "AM" ? { background: "var(--brand)", color: "var(--brand-foreground)" } : undefined}>AM</button>
+                  <button type="button" onClick={() => props.setAmpm("PM")} className={`px-3 py-2 text-sm ${props.ampm === "PM" ? "" : "bg-transparent"}`} style={props.ampm === "PM" ? { background: "var(--brand)", color: "var(--brand-foreground)" } : undefined}>PM</button>
                 </div>
               </div>
             </Field>
 
             <Field label="பிறந்த இடம்">
               <IconInput icon={<MapPin className="h-5 w-5" />}>
-                <input
-                  required
-                  value={place}
-                  onChange={(e) => setPlace(e.target.value)}
-                  placeholder="பிறந்த இடத்தை உள்ளிடவும் (e.g. Chennai)"
-                  className="w-full bg-transparent outline-none text-sm"
-                  maxLength={200}
-                />
+                <input required value={props.place} onChange={(e) => props.setPlace(e.target.value)} placeholder="பிறந்த இடத்தை உள்ளிடவும்" className="w-full bg-transparent outline-none text-sm" maxLength={200} />
               </IconInput>
             </Field>
 
             <div className="flex justify-center pt-2">
-              <button
-                type="submit"
-                disabled={mut.isPending}
-                className="btn-brand rounded-full px-10 py-3 font-bold disabled:opacity-60 inline-flex items-center gap-2"
-              >
-                {mut.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
+              <button type="submit" disabled={pending} className="btn-brand rounded-full px-10 py-3 font-bold disabled:opacity-60 inline-flex items-center gap-2">
+                {pending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
                 Submit
               </button>
             </div>
           </form>
         </div>
 
-        {mut.isError && (
+        {error && (
           <div className="mt-6 rounded-xl border border-destructive/40 bg-destructive/10 p-4 text-sm text-destructive">
-            {(mut.error as Error).message}
+            {error}
           </div>
         )}
 
-        {mut.data && <Result data={mut.data} name={name} viewDate={viewDate} onViewDateChange={onViewDateChange} pending={mut.isPending} />}
-
-        {!mut.data && !mut.isPending && (
+        {!pending && !error && (
           <img src={heroImg} alt="Five sacred birds of Panchapakshi Shastra" className="mt-10 mx-auto max-w-sm w-full opacity-90" width={1024} height={1024} loading="lazy" />
         )}
       </div>
@@ -182,13 +241,301 @@ function PanchapakshiPage() {
   );
 }
 
-function Field({ label, children }: { label: string; children: React.ReactNode }) {
+/* ============================================================
+ *  SCREEN 2 — Bird info + date navigator
+ * ============================================================ */
+function InfoScreen({ data, name, place, viewDate, onViewDateChange, pending, onBack, onNext }: {
+  data: PanchapakshiApiResult; name: string; place: string;
+  viewDate: string; onViewDateChange: (v: string) => void; pending: boolean;
+  onBack: () => void; onNext: () => void;
+}) {
+  const bird = BIRDS[data.birthBird];
+  const todayYmd = todayLocalYmd();
   return (
-    <div>
-      <label className="block font-bold mb-2 text-foreground">{label}</label>
-      {children}
+    <main className="min-h-screen bg-background pb-24">
+      <TopBar title="பஞ்சபக்ஷி" onBack={onBack} />
+      <DateNavigator viewDate={viewDate} onViewDateChange={onViewDateChange} pending={pending} isToday={viewDate === todayYmd} />
+
+      <div className="mx-auto max-w-2xl px-5 mt-8">
+        <div className="rounded-3xl bg-card border border-border/60 shadow-sm p-6">
+          <h2 className="text-center text-lg font-bold mb-6" style={{ color: "var(--brand-deep)" }}>நடப்பு பட்சி</h2>
+
+          <div className="flex items-center justify-center gap-3 mb-6">
+            <span className={`inline-block h-3.5 w-3.5 rounded-full ${data.paksha === "valarpirai" ? "bg-emerald-500" : "bg-red-500"}`} />
+            <span className="font-bold">
+              {data.paksha === "valarpirai" ? "வளர் பிறை" : "தேய் பிறை"} பகல்
+            </span>
+          </div>
+
+          <dl className="divide-y divide-border/60 text-sm">
+            <InfoRow label="பெயர்" value={name} />
+            <InfoRow label="பிறந்த இடம்" value={place} />
+            <InfoRow label="ஜென்ம பட்சி" value={`${BIRD_EMOJI[data.birthBird]} ${bird.ta}`} />
+            <InfoRow label="பிறப்பு பக்ஷம்" value={data.paksha === "valarpirai" ? "சுக்ல பக்ஷம்" : "க்ருஷ்ண பக்ஷம்"} />
+            <InfoRow label="வாரம்" value={["ஞாயிறு","திங்கள்","செவ்வாய்","புதன்","வியாழன்","வெள்ளி","சனி"][data.weekday]} />
+            <InfoRow label="திதி" value={String(data.tithi)} />
+            <InfoRow label="சூரிய உதயம்" value={fmtTime(data.sunrise, data.input.tzOffsetMin)} />
+            <InfoRow label="சூரிய அஸ்தமனம்" value={fmtTime(data.sunset, data.input.tzOffsetMin)} />
+          </dl>
+        </div>
+
+        <button
+          onClick={onNext}
+          className="btn-brand mt-8 w-full rounded-full py-3 font-bold inline-flex items-center justify-center gap-2"
+        >
+          பட்சியின் நிலைகள் <ChevronRight className="h-4 w-4" />
+        </button>
+      </div>
+    </main>
+  );
+}
+
+function InfoRow({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="grid grid-cols-[minmax(0,7rem)_auto_minmax(0,1fr)] items-start gap-3 py-3">
+      <dt className="text-muted-foreground">{label}</dt>
+      <span className="text-muted-foreground">:</span>
+      <dd className="min-w-0 font-semibold" style={{ color: "var(--brand-deep)" }}>{value}</dd>
     </div>
   );
+}
+
+/* ============================================================
+ *  SCREEN 3 — Activity cards (Pakal / Iravu toggle)
+ * ============================================================ */
+function ActivitiesScreen({ data, viewDate, onViewDateChange, pending, dayNight, setDayNight, onBack, onOpenSlot }: {
+  data: PanchapakshiApiResult; viewDate: string; onViewDateChange: (v: string) => void; pending: boolean;
+  dayNight: "day" | "night"; setDayNight: (v: "day" | "night") => void;
+  onBack: () => void; onOpenSlot: (slotIdx: number) => void;
+}) {
+  const block = dayNight === "day" ? data.day : data.night;
+  const tz = data.input.tzOffsetMin;
+  const birthBird = data.birthBird;
+
+  return (
+    <main className="min-h-screen bg-background pb-24">
+      <TopBar title="பட்சியின் நிலைகள்" onBack={onBack} />
+
+      <div className="mx-auto max-w-2xl px-5 mt-6">
+        <div className="flex items-center justify-center gap-3 mb-5">
+          <Toggle active={dayNight === "day"} onClick={() => setDayNight("day")} label="பகல்" />
+          <Toggle active={dayNight === "night"} onClick={() => setDayNight("night")} label="இரவு" />
+        </div>
+
+        <div className="text-center mb-4 text-xs text-muted-foreground">
+          {viewDate.split("-").reverse().join("-")} · {data.paksha === "valarpirai" ? "வளர் பிறை" : "தேய் பிறை"}
+        </div>
+
+        <div className="rounded-3xl bg-rose-50/60 border border-rose-100 p-4">
+          <div className="grid grid-cols-2 gap-4">
+            {block.slots.map((s, i) => {
+              const act = s.birdActivities[birthBird];
+              // Center the 3rd (index 2) card by making it span 2 cols
+              const isCenter = i === 2;
+              return (
+                <button
+                  key={i}
+                  onClick={() => onOpenSlot(i)}
+                  className={`text-center py-3 ${isCenter ? "col-span-2" : ""}`}
+                >
+                  <ActivityLabel activity={act} />
+                  <p className="mt-2 text-xs font-medium text-foreground">
+                    {fmtTime(s.start, tz)} - {fmtTime(s.end, tz)}
+                  </p>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        {pending && (
+          <div className="mt-4 flex justify-center">
+            <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+          </div>
+        )}
+
+        <div className="mt-6 rounded-2xl border border-border/60 bg-card p-4 text-xs text-muted-foreground leading-relaxed">
+          <p><b style={{ color: "var(--brand-deep)" }}>{BIRD_EMOJI[birthBird]} {BIRDS[birthBird].ta}</b> — உங்கள் ஜென்ம பட்சி. நேர அட்டவணை மேலே காட்டப்பட்ட {dayNight === "day" ? "பகல்" : "இரவு"} செயல்பாடு உங்கள் பட்சிக்கு உரியது.</p>
+          <p className="mt-2">ஒரு நிலையை தட்டி உள்ளிட்டு சூட்சம பட்சி காணவும்.</p>
+        </div>
+
+        <button onClick={onBack} className="mt-6 w-full rounded-full py-2.5 text-sm border border-input font-semibold">
+          தேதி மாற்று
+        </button>
+        <div className="mt-3">
+          <DateNavigatorInline viewDate={viewDate} onViewDateChange={onViewDateChange} pending={pending} />
+        </div>
+      </div>
+    </main>
+  );
+}
+
+function ActivityLabel({ activity }: { activity: ActivityKey }) {
+  const a = ACTIVITIES[activity];
+  return (
+    <div className="inline-flex flex-col items-center">
+      <div className="inline-flex items-center gap-1">
+        <span className={`text-xl font-bold ${ACT_COLOR[activity]}`}>{a.ta}</span>
+        <span className={`text-sm ${ACT_COLOR[activity]}`}>▼</span>
+      </div>
+      <span className={`mt-1 block h-0.5 w-16 rounded-full ${ACT_UNDERLINE[activity]}`} />
+    </div>
+  );
+}
+
+function Toggle({ active, onClick, label }: { active: boolean; onClick: () => void; label: string }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={`inline-flex items-center gap-2 rounded-full px-6 py-2 border ${active ? "bg-sky-100 border-sky-200" : "bg-secondary border-border"}`}
+    >
+      <span className={`h-5 w-5 rounded-full border-2 grid place-items-center ${active ? "" : "border-input"}`} style={active ? { borderColor: "var(--brand-deep)" } : undefined}>
+        {active && <span className="h-2.5 w-2.5 rounded-full" style={{ background: "var(--brand-deep)" }} />}
+      </span>
+      <span className="text-sm font-semibold">{label}</span>
+    </button>
+  );
+}
+
+/* ============================================================
+ *  SCREEN 4 — Sub-slot (சூட்சம பட்சி) detail
+ * ============================================================ */
+function DetailScreen({ data, selected, onBack }: { data: PanchapakshiApiResult; selected: NonNullable<Selected>; onBack: () => void }) {
+  const block = selected.block === "day" ? data.day : data.night;
+  const slot = block.slots[selected.slotIdx];
+  const tz = data.input.tzOffsetMin;
+  const birthBird = data.birthBird;
+  const mainAct = slot.birdActivities[birthBird];
+
+  // Sub-slot activity progression per Panchapakshi tradition:
+  //   ஊண் (eat) → நடை (walk) → துயில் (sleep) → சாவு (die) → அரசு (rule)
+  // Sub-durations use the classical 5:4:2:1.5:3.5 ratio (of 16 units) — this
+  // matches the printed sub-nazhigai timings.
+  const SUB_ORDER: ActivityKey[] = ["eat", "walk", "sleep", "die", "rule"];
+  const SUB_WEIGHTS = [5, 4, 2, 1.5, 3.5];
+  const totalWeight = SUB_WEIGHTS.reduce((a, b) => a + b, 0);
+  const totalMs = new Date(slot.end).getTime() - new Date(slot.start).getTime();
+  let cursor = new Date(slot.start).getTime();
+  const subSlots = SUB_ORDER.map((act, i) => {
+    const start = new Date(cursor);
+    cursor += (totalMs * SUB_WEIGHTS[i]) / totalWeight;
+    const end = new Date(cursor);
+    return { activity: act, start, end };
+  });
+
+  return (
+    <main className="min-h-screen bg-background pb-16">
+      <TopBar title="பட்சியின் நிலைகள்" onBack={onBack} />
+
+      <div className="mx-auto max-w-2xl px-5 mt-6">
+        <div className="rounded-3xl bg-rose-50/60 border border-rose-100 p-5">
+          <div className="rounded-xl bg-rose-100 py-2 text-center">
+            <span className="text-lg font-bold" style={{ color: "var(--brand-deep)" }}>சூட்சம பட்சி</span>
+          </div>
+
+          <div className="mt-4 text-center text-xs text-muted-foreground">
+            முதன்மை நிலை: <b className={ACT_COLOR[mainAct]}>{ACTIVITIES[mainAct].ta}</b>{" "}
+            · {fmtTime(slot.start.toString(), tz)} – {fmtTime(slot.end.toString(), tz)}
+          </div>
+
+          <div className="mt-5 space-y-4">
+            {subSlots.map((s, i) => (
+              <div key={i}>
+                <div className="inline-flex items-center gap-1">
+                  <span className={`text-lg font-bold ${ACT_COLOR[s.activity]}`}>{ACTIVITIES[s.activity].ta}</span>
+                </div>
+                <p className="text-sm text-foreground/80 mt-0.5">
+                  {fmtTimeSec(s.start.toISOString(), tz)} - {fmtTimeSec(s.end.toISOString(), tz)}
+                </p>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <p className="mt-4 text-xs text-muted-foreground leading-relaxed px-2">
+          சூட்சம பட்சி நேரங்கள் முதன்மை நிலையின் நேரத்தை பாரம்பரிய 5:4:2:1.5:3.5 விகிதத்தில் பிரித்து கணிக்கப்பட்டவை.
+        </p>
+      </div>
+    </main>
+  );
+}
+
+/* ============================================================
+ *  Shared building blocks
+ * ============================================================ */
+function TopBar({ title, onBack }: { title: string; onBack?: () => void }) {
+  return (
+    <header className="relative py-5 px-4 text-center shadow-sm" style={{ background: "var(--brand)" }}>
+      {onBack && (
+        <button onClick={onBack} className="absolute left-3 top-1/2 -translate-y-1/2 p-2 rounded-full" aria-label="Back" style={{ color: "var(--brand-foreground)" }}>
+          <ArrowLeft className="h-5 w-5" />
+        </button>
+      )}
+      <h1 className="text-lg sm:text-xl font-bold" style={{ color: "var(--brand-foreground)" }}>{title}</h1>
+    </header>
+  );
+}
+
+function DateNavigator({ viewDate, onViewDateChange, pending, isToday }: { viewDate: string; onViewDateChange: (v: string) => void; pending: boolean; isToday: boolean }) {
+  return (
+    <div className="relative overflow-hidden pt-6 pb-14" style={{ background: "var(--brand)" }}>
+      <div className="mx-auto max-w-2xl px-5 text-center" style={{ color: "var(--brand-foreground)" }}>
+        <div className="inline-flex items-center gap-2 text-xl font-bold">
+          <Calendar className="h-5 w-5" />
+          <span>{viewDate.split("-").reverse().join("-")}</span>
+          {isToday && <span className="text-[10px] uppercase font-bold px-2 py-0.5 rounded-full bg-card" style={{ color: "var(--brand-deep)" }}>Today</span>}
+          {pending && <Loader2 className="h-4 w-4 animate-spin" />}
+        </div>
+        <div className="mt-5 mx-auto inline-flex items-center gap-1 rounded-full bg-white p-1 shadow-lg">
+          <button
+            type="button"
+            onClick={() => onViewDateChange(shiftYmd(viewDate, -1))}
+            disabled={pending}
+            className="inline-flex items-center gap-1 rounded-full px-4 py-2 text-sm font-bold disabled:opacity-60"
+            style={{ background: "var(--brand)", color: "var(--brand-foreground)" }}
+          >
+            <ChevronLeft className="h-4 w-4" /> முந்தைய<br />தேதி
+          </button>
+          <label className="inline-flex items-center px-3 py-2 text-sm font-bold cursor-pointer" style={{ color: "var(--brand-deep)" }}>
+            <input type="date" value={viewDate} onChange={(e) => onViewDateChange(e.target.value)} className="sr-only" aria-label="Pick date" />
+            <Calendar className="h-4 w-4" />
+          </label>
+          <button
+            type="button"
+            onClick={() => onViewDateChange(shiftYmd(viewDate, +1))}
+            disabled={pending}
+            className="inline-flex items-center gap-1 rounded-full px-4 py-2 text-sm font-bold disabled:opacity-60"
+            style={{ color: "var(--brand-deep)" }}
+          >
+            அடுத்த<br />தேதி <ChevronRight className="h-4 w-4" />
+          </button>
+        </div>
+      </div>
+      {/* Curved bottom */}
+      <svg className="absolute bottom-0 left-0 w-full" viewBox="0 0 400 40" preserveAspectRatio="none" style={{ height: 32 }}>
+        <path d="M0,40 Q200,0 400,40 L400,40 L0,40 Z" fill="hsl(var(--background))" />
+      </svg>
+    </div>
+  );
+}
+
+function DateNavigatorInline({ viewDate, onViewDateChange, pending }: { viewDate: string; onViewDateChange: (v: string) => void; pending: boolean }) {
+  return (
+    <div className="flex items-center justify-between gap-2 rounded-full border border-input bg-card px-2 py-1.5">
+      <button onClick={() => onViewDateChange(shiftYmd(viewDate, -1))} disabled={pending} className="p-2 rounded-full hover:bg-secondary disabled:opacity-60" aria-label="Previous day">
+        <ChevronLeft className="h-4 w-4" />
+      </button>
+      <input type="date" value={viewDate} onChange={(e) => onViewDateChange(e.target.value)} className="bg-transparent text-sm text-center outline-none" />
+      <button onClick={() => onViewDateChange(shiftYmd(viewDate, +1))} disabled={pending} className="p-2 rounded-full hover:bg-secondary disabled:opacity-60" aria-label="Next day">
+        <ChevronRight className="h-4 w-4" />
+      </button>
+    </div>
+  );
+}
+
+function Field({ label, children }: { label: string; children: React.ReactNode }) {
+  return <div><label className="block font-bold mb-2 text-foreground">{label}</label>{children}</div>;
 }
 
 function IconInput({ icon, children }: { icon: React.ReactNode; children: React.ReactNode }) {
@@ -202,23 +549,14 @@ function IconInput({ icon, children }: { icon: React.ReactNode; children: React.
 
 function NumBox({ value, onChange, placeholder, min, max, wide }: { value: string; onChange: (v: string) => void; placeholder: string; min: number; max: number; wide?: boolean }) {
   return (
-    <input
-      required
-      type="number"
-      min={min}
-      max={max}
-      value={value}
-      onChange={(e) => onChange(e.target.value)}
-      placeholder={placeholder}
-      className={`rounded-full border border-input bg-background px-3 py-2.5 text-center text-sm outline-none focus:border-brand-deep ${wide ? "w-24" : "w-20"}`}
-    />
+    <input required type="number" min={min} max={max} value={value} onChange={(e) => onChange(e.target.value)} placeholder={placeholder} className={`rounded-full border border-input bg-background px-3 py-2.5 text-center text-sm outline-none focus:border-brand-deep ${wide ? "w-24" : "w-20"}`} />
   );
 }
 
 function Radio({ checked, onChange, label }: { checked: boolean; onChange: () => void; label: string }) {
   return (
     <button type="button" onClick={onChange} className="inline-flex items-center gap-2">
-      <span className={`h-5 w-5 rounded-full border-2 grid place-items-center ${checked ? "border-brand-deep" : "border-input"}`} style={checked ? { borderColor: "var(--brand-deep)" } : undefined}>
+      <span className={`h-5 w-5 rounded-full border-2 grid place-items-center ${checked ? "" : "border-input"}`} style={checked ? { borderColor: "var(--brand-deep)" } : undefined}>
         {checked && <span className="h-2.5 w-2.5 rounded-full" style={{ background: "var(--brand-deep)" }} />}
       </span>
       <span className="text-sm font-medium">{label}</span>
@@ -231,144 +569,14 @@ function fmtTime(iso: string, tzOffsetMin: number) {
   const hh = d.getUTCHours();
   const mm = d.getUTCMinutes().toString().padStart(2, "0");
   const h12 = ((hh + 11) % 12) + 1;
-  return `${h12}:${mm} ${hh < 12 ? "AM" : "PM"}`;
+  return `${h12.toString().padStart(2, "0")}:${mm} ${hh < 12 ? "am" : "pm"}`;
 }
 
-function Result({ data, name, viewDate, onViewDateChange, pending }: { data: PanchapakshiApiResult; name: string; viewDate: string; onViewDateChange: (v: string) => void; pending: boolean }) {
-  const tz = data.input.tzOffsetMin;
-  const bird = BIRDS[data.birthBird];
-  const todayYmd = todayLocalYmd();
-  const viewLabel = new Date(`${viewDate}T00:00:00`).toLocaleDateString(undefined, { weekday: "long", year: "numeric", month: "long", day: "numeric" });
-  return (
-    <section className="mt-8 space-y-6">
-      <div className="rounded-3xl bg-card shadow-xl border border-border/60 p-6 sm:p-8 text-center">
-        <p className="text-sm text-muted-foreground">{name && `${name} — `}உங்கள் ஜென்ம பட்சி</p>
-        <div className="mt-3 text-6xl">{BIRD_EMOJI[data.birthBird]}</div>
-        <h2 className="mt-2 text-3xl font-bold" style={{ color: "var(--brand-deep)" }}>{bird.ta}</h2>
-        <p className="text-sm text-muted-foreground">{bird.en}</p>
-        <div className="mt-4 grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
-          <Stat label="வாரம்" value={["ஞாயிறு","திங்கள்","செவ்வாய்","புதன்","வியாழன்","வெள்ளி","சனி"][data.weekday]} />
-          <Stat label="பக்ஷம்" value={data.paksha === "valarpirai" ? "வளர்பிறை" : "தேய்பிறை"} />
-          <Stat label="திதி" value={String(data.tithi)} />
-          <Stat label="சூரிய உதயம்" value={fmtTime(data.sunrise, tz)} />
-        </div>
-      </div>
-
-      {/* Date navigator card */}
-      <div className="rounded-3xl overflow-hidden shadow-xl border border-border/60">
-        <div className="p-5 sm:p-6 text-center" style={{ background: "var(--brand)" }}>
-          <div className="inline-flex items-center gap-2 text-lg sm:text-xl font-bold" style={{ color: "var(--brand-foreground)" }}>
-            <Calendar className="h-5 w-5" />
-            <span>{viewDate.split("-").reverse().join("-")}</span>
-          </div>
-          <div className="mt-4 flex items-center justify-center gap-2">
-            <button
-              type="button"
-              onClick={() => onViewDateChange(shiftYmd(viewDate, -1))}
-              disabled={pending}
-              className="inline-flex items-center gap-1 rounded-full bg-card px-4 py-2 text-sm font-semibold shadow disabled:opacity-60"
-              style={{ color: "var(--brand-deep)" }}
-            >
-              <ChevronLeft className="h-4 w-4" /> முந்தைய தேதி
-            </button>
-            <input
-              type="date"
-              value={viewDate}
-              onChange={(e) => onViewDateChange(e.target.value)}
-              aria-label="Pick date"
-              className="rounded-full border border-white/40 bg-white/90 px-3 py-2 text-xs outline-none"
-            />
-            <button
-              type="button"
-              onClick={() => onViewDateChange(shiftYmd(viewDate, +1))}
-              disabled={pending}
-              className="inline-flex items-center gap-1 rounded-full bg-card px-4 py-2 text-sm font-semibold shadow disabled:opacity-60"
-              style={{ color: "var(--brand-deep)" }}
-            >
-              அடுத்த தேதி <ChevronRight className="h-4 w-4" />
-            </button>
-          </div>
-          <div className="mt-3 flex items-center justify-center gap-3 text-sm" style={{ color: "var(--brand-foreground)" }}>
-            <span className="inline-flex items-center gap-2">
-              <span className={`inline-block h-3 w-3 rounded-full ${data.paksha === "valarpirai" ? "bg-emerald-500" : "bg-red-500"}`} />
-              <b>{data.paksha === "valarpirai" ? "வளர் பிறை" : "தேய் பிறை"}</b>
-              <span className="opacity-80">· திதி {data.tithi}</span>
-            </span>
-            {viewDate === todayYmd && (
-              <span className="text-[10px] uppercase font-bold px-2 py-0.5 rounded-full bg-card" style={{ color: "var(--brand-deep)" }}>Today</span>
-            )}
-            {pending && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
-          </div>
-          <p className="mt-1 text-xs opacity-80" style={{ color: "var(--brand-foreground)" }}>{viewLabel}</p>
-        </div>
-      </div>
-
-
-      <ScheduleTable title="பகல் தொழில் (Day)" subtitle={`${fmtTime(data.sunrise, tz)} → ${fmtTime(data.sunset, tz)}`} block={data.day} tz={tz} birthBird={data.birthBird} />
-      <ScheduleTable title="இரவு தொழில் (Night)" subtitle={`${fmtTime(data.sunset, tz)} → ${fmtTime(data.nextSunrise, tz)}`} block={data.night} tz={tz} birthBird={data.birthBird} />
-
-      <p className="text-xs text-muted-foreground px-2 leading-relaxed">
-        Schedule computed for the selected date, using sunrise/sunset at your birth place.
-        Activity sequence follows the paksha (valarpirai/theipirai) and weekday of that day.
-        Your favourable moments are the slots where your Jenma Pakshi
-        ({bird.ta}) is <b>ஆளுதல் (Ruling)</b> or <b>உண்ணல் (Eating)</b>.
-      </p>
-    </section>
-  );
-}
-
-function Stat({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="rounded-xl bg-secondary p-3">
-      <p className="text-[10px] uppercase tracking-wide text-muted-foreground">{label}</p>
-      <p className="mt-0.5 font-semibold">{value}</p>
-    </div>
-  );
-}
-
-function ScheduleTable({ title, subtitle, block, tz, birthBird }: { title: string; subtitle: string; block: PanchapakshiApiResult["day"]; tz: number; birthBird: BirdKey }) {
-  const rulingBird = BIRDS[block.ruling];
-  return (
-    <div className="rounded-3xl bg-card shadow-xl border border-border/60 overflow-hidden">
-      <div className="p-5" style={{ background: "var(--brand)" }}>
-        <div className="flex items-baseline justify-between">
-          <h3 className="text-lg font-bold" style={{ color: "var(--brand-foreground)" }}>{title}</h3>
-          <span className="text-sm opacity-80">{subtitle}</span>
-        </div>
-        <p className="text-xs mt-1 opacity-80">ஆளும் பட்சி: {rulingBird.ta} ({rulingBird.en})</p>
-      </div>
-      <div className="overflow-x-auto">
-        <table className="w-full text-sm">
-          <thead className="bg-secondary/60 text-xs uppercase tracking-wide text-muted-foreground">
-            <tr>
-              <th className="text-left px-3 py-2">Time</th>
-              {(["vulture", "owl", "crow", "cock", "peacock"] as BirdKey[]).map((b) => (
-                <th key={b} className={`text-left px-3 py-2 ${b === birthBird ? "text-brand-deep" : ""}`} style={b === birthBird ? { color: "var(--brand-deep)" } : undefined}>
-                  {BIRD_EMOJI[b]} {BIRDS[b].ta}
-                </th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {block.slots.map((s, i) => {
-              return (
-                <tr key={i} className="border-t border-border/60">
-                  <td className="px-3 py-2 whitespace-nowrap text-xs">{fmtTime(s.start, tz)} – {fmtTime(s.end, tz)}</td>
-                  {(["vulture", "owl", "crow", "cock", "peacock"] as BirdKey[]).map((b) => {
-                    const a = s.birdActivities[b] as ActivityKey;
-                    const act = ACTIVITIES[a];
-                    return (
-                      <td key={b} className={`px-3 py-2 ${b === birthBird ? "font-semibold" : ""}`}>
-                        <span className={`inline-block rounded-md border px-2 py-0.5 text-xs ${QUALITY_STYLES[act.quality]}`}>{act.ta}</span>
-                      </td>
-                    );
-                  })}
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
-      </div>
-    </div>
-  );
+function fmtTimeSec(iso: string, tzOffsetMin: number) {
+  const d = new Date(new Date(iso).getTime() + tzOffsetMin * 60_000);
+  const hh = d.getUTCHours();
+  const mm = d.getUTCMinutes().toString().padStart(2, "0");
+  const ss = d.getUTCSeconds().toString().padStart(2, "0");
+  const h12 = ((hh + 11) % 12) + 1;
+  return `${h12.toString().padStart(2, "0")}:${mm}:${ss} ${hh < 12 ? "am" : "pm"}`;
 }
