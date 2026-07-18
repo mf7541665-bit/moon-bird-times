@@ -162,7 +162,7 @@ function PanchapakshiPage() {
           </div>
         )}
 
-        {mut.data && <Result data={mut.data} name={name} />}
+        {mut.data && <Result data={mut.data} name={name} viewDate={viewDate} onViewDateChange={onViewDateChange} pending={mut.isPending} />}
 
         {!mut.data && !mut.isPending && (
           <img src={heroImg} alt="Five sacred birds of Panchapakshi Shastra" className="mt-10 mx-auto max-w-sm w-full opacity-90" width={1024} height={1024} loading="lazy" />
@@ -224,9 +224,11 @@ function fmtTime(iso: string, tzOffsetMin: number) {
   return `${h12}:${mm} ${hh < 12 ? "AM" : "PM"}`;
 }
 
-function Result({ data, name }: { data: PanchapakshiApiResult; name: string }) {
+function Result({ data, name, viewDate, onViewDateChange, pending }: { data: PanchapakshiApiResult; name: string; viewDate: string; onViewDateChange: (v: string) => void; pending: boolean }) {
   const tz = data.input.tzOffsetMin;
   const bird = BIRDS[data.birthBird];
+  const todayYmd = todayLocalYmd();
+  const viewLabel = new Date(`${viewDate}T00:00:00`).toLocaleDateString(undefined, { weekday: "long", year: "numeric", month: "long", day: "numeric" });
   return (
     <section className="mt-8 space-y-6">
       <div className="rounded-3xl bg-card shadow-xl border border-border/60 p-6 sm:p-8 text-center">
@@ -242,13 +244,41 @@ function Result({ data, name }: { data: PanchapakshiApiResult; name: string }) {
         </div>
       </div>
 
-      <ScheduleTable title="பகல் (Day)" subtitle={`${fmtTime(data.sunrise, tz)} → ${fmtTime(data.sunset, tz)}`} block={data.day} tz={tz} birthBird={data.birthBird} />
-      <ScheduleTable title="இரவு (Night)" subtitle={`${fmtTime(data.sunset, tz)} → ${fmtTime(data.nextSunrise, tz)}`} block={data.night} tz={tz} birthBird={data.birthBird} />
+      <div className="rounded-3xl bg-card shadow-xl border border-border/60 p-5 sm:p-6">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+          <div>
+            <p className="text-xs uppercase tracking-wide text-muted-foreground">பார்க்கும் தேதி · View date</p>
+            <p className="text-base font-semibold mt-0.5 flex items-center gap-2">
+              {viewLabel}
+              {viewDate === todayYmd && (
+                <span className="text-[10px] uppercase font-bold px-2 py-0.5 rounded-full" style={{ background: "var(--brand)", color: "var(--brand-foreground)" }}>Today</span>
+              )}
+              {pending && <Loader2 className="h-3.5 w-3.5 animate-spin text-muted-foreground" />}
+            </p>
+          </div>
+          <div className="flex items-center gap-2">
+            <input
+              type="date"
+              value={viewDate}
+              onChange={(e) => onViewDateChange(e.target.value)}
+              className="rounded-full border border-input bg-background px-4 py-2 text-sm outline-none focus:border-brand-deep"
+            />
+            {viewDate !== todayYmd && (
+              <button type="button" onClick={() => onViewDateChange(todayYmd)} className="text-xs font-semibold px-3 py-2 rounded-full border border-input hover:bg-secondary">
+                Today
+              </button>
+            )}
+          </div>
+        </div>
+      </div>
+
+      <ScheduleTable title="பகல் தொழில் (Day)" subtitle={`${fmtTime(data.sunrise, tz)} → ${fmtTime(data.sunset, tz)}`} block={data.day} tz={tz} birthBird={data.birthBird} />
+      <ScheduleTable title="இரவு தொழில் (Night)" subtitle={`${fmtTime(data.sunset, tz)} → ${fmtTime(data.nextSunrise, tz)}`} block={data.night} tz={tz} birthBird={data.birthBird} />
 
       <p className="text-xs text-muted-foreground px-2 leading-relaxed">
-        Times computed from sunrise/sunset at the birth place. Activity durations
-        follow the traditional nazhigai table; sequence varies by paksha (valarpirai/theipirai)
-        and day/night. Your favourable moments are the slots where your Jenma Pakshi
+        Schedule computed for the selected date, using sunrise/sunset at your birth place.
+        Activity sequence follows the paksha (valarpirai/theipirai) and weekday of that day.
+        Your favourable moments are the slots where your Jenma Pakshi
         ({bird.ta}) is <b>ஆளுதல் (Ruling)</b> or <b>உண்ணல் (Eating)</b>.
       </p>
     </section>
