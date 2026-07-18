@@ -35,6 +35,16 @@ function todayLocalYmd() {
   return `${y}-${m}-${day}`;
 }
 
+function shiftYmd(ymd: string, days: number) {
+  const [y, m, d] = ymd.split("-").map(Number);
+  const dt = new Date(y, m - 1, d);
+  dt.setDate(dt.getDate() + days);
+  const yy = dt.getFullYear();
+  const mm = (dt.getMonth() + 1).toString().padStart(2, "0");
+  const dd = dt.getDate().toString().padStart(2, "0");
+  return `${yy}-${mm}-${dd}`;
+}
+
 function PanchapakshiPage() {
   const runFn = useServerFn(runPanchapakshi);
   const mut = useMutation({ mutationFn: (data: PanchapakshiInput) => runFn({ data }) });
