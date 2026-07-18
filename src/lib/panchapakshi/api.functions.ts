@@ -45,17 +45,17 @@ export const runPanchapakshi = createServerFn({ method: "POST" })
       .padStart(2, "0")}:${data.minute.toString().padStart(2, "0")}:00`;
 
     const result = computePanchapakshi({
+      name: data.name,
       isoLocal: iso,
       tzOffsetMin,
       latitude: geo.lat,
       longitude: geo.lon,
     });
 
-    // Serialize dates to ISO for transport
     const serializeBlock = (b: typeof result.day) => ({
       ruling: b.ruling,
       slots: b.slots.map((s) => ({
-        activity: s.activity,
+        slotIdx: s.slotIdx,
         start: s.start.toISOString(),
         end: s.end.toISOString(),
         birdActivities: s.birdActivities,
@@ -65,9 +65,9 @@ export const runPanchapakshi = createServerFn({ method: "POST" })
     return {
       input: { ...data, geocoded: geo.display, tzOffsetMin },
       birthBird: result.birthBird,
-      nakshatraIndex: result.nakshatra.index,
       paksha: result.paksha,
       tithi: result.tithi,
+      weekday: result.weekday,
       sunrise: result.sunrise.toISOString(),
       sunset: result.sunset.toISOString(),
       nextSunrise: result.nextSunrise.toISOString(),
