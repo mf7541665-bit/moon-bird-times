@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useMutation } from "@tanstack/react-query";
 import { useState } from "react";
-import { User, Users, Calendar, Clock, MapPin, Loader2, Sparkles } from "lucide-react";
+import { User, Users, Calendar, Clock, MapPin, Loader2, Sparkles, ChevronLeft, ChevronRight } from "lucide-react";
 import { runPanchapakshi, type PanchapakshiApiResult, type PanchapakshiInput } from "@/lib/panchapakshi/api.functions";
 import { BIRDS, ACTIVITIES, type ActivityKey, type BirdKey } from "@/lib/panchapakshi/tables";
 import heroImg from "@/assets/panchapakshi-hero.jpg";
@@ -244,33 +244,55 @@ function Result({ data, name, viewDate, onViewDateChange, pending }: { data: Pan
         </div>
       </div>
 
-      <div className="rounded-3xl bg-card shadow-xl border border-border/60 p-5 sm:p-6">
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-          <div>
-            <p className="text-xs uppercase tracking-wide text-muted-foreground">பார்க்கும் தேதி · View date</p>
-            <p className="text-base font-semibold mt-0.5 flex items-center gap-2">
-              {viewLabel}
-              {viewDate === todayYmd && (
-                <span className="text-[10px] uppercase font-bold px-2 py-0.5 rounded-full" style={{ background: "var(--brand)", color: "var(--brand-foreground)" }}>Today</span>
-              )}
-              {pending && <Loader2 className="h-3.5 w-3.5 animate-spin text-muted-foreground" />}
-            </p>
+      {/* Date navigator card */}
+      <div className="rounded-3xl overflow-hidden shadow-xl border border-border/60">
+        <div className="p-5 sm:p-6 text-center" style={{ background: "var(--brand)" }}>
+          <div className="inline-flex items-center gap-2 text-lg sm:text-xl font-bold" style={{ color: "var(--brand-foreground)" }}>
+            <Calendar className="h-5 w-5" />
+            <span>{viewDate.split("-").reverse().join("-")}</span>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="mt-4 flex items-center justify-center gap-2">
+            <button
+              type="button"
+              onClick={() => onViewDateChange(shiftYmd(viewDate, -1))}
+              disabled={pending}
+              className="inline-flex items-center gap-1 rounded-full bg-card px-4 py-2 text-sm font-semibold shadow disabled:opacity-60"
+              style={{ color: "var(--brand-deep)" }}
+            >
+              <ChevronLeft className="h-4 w-4" /> முந்தைய தேதி
+            </button>
             <input
               type="date"
               value={viewDate}
               onChange={(e) => onViewDateChange(e.target.value)}
-              className="rounded-full border border-input bg-background px-4 py-2 text-sm outline-none focus:border-brand-deep"
+              aria-label="Pick date"
+              className="rounded-full border border-white/40 bg-white/90 px-3 py-2 text-xs outline-none"
             />
-            {viewDate !== todayYmd && (
-              <button type="button" onClick={() => onViewDateChange(todayYmd)} className="text-xs font-semibold px-3 py-2 rounded-full border border-input hover:bg-secondary">
-                Today
-              </button>
-            )}
+            <button
+              type="button"
+              onClick={() => onViewDateChange(shiftYmd(viewDate, +1))}
+              disabled={pending}
+              className="inline-flex items-center gap-1 rounded-full bg-card px-4 py-2 text-sm font-semibold shadow disabled:opacity-60"
+              style={{ color: "var(--brand-deep)" }}
+            >
+              அடுத்த தேதி <ChevronRight className="h-4 w-4" />
+            </button>
           </div>
+          <div className="mt-3 flex items-center justify-center gap-3 text-sm" style={{ color: "var(--brand-foreground)" }}>
+            <span className="inline-flex items-center gap-2">
+              <span className={`inline-block h-3 w-3 rounded-full ${data.paksha === "valarpirai" ? "bg-emerald-500" : "bg-red-500"}`} />
+              <b>{data.paksha === "valarpirai" ? "வளர் பிறை" : "தேய் பிறை"}</b>
+              <span className="opacity-80">· திதி {data.tithi}</span>
+            </span>
+            {viewDate === todayYmd && (
+              <span className="text-[10px] uppercase font-bold px-2 py-0.5 rounded-full bg-card" style={{ color: "var(--brand-deep)" }}>Today</span>
+            )}
+            {pending && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
+          </div>
+          <p className="mt-1 text-xs opacity-80" style={{ color: "var(--brand-foreground)" }}>{viewLabel}</p>
         </div>
       </div>
+
 
       <ScheduleTable title="பகல் தொழில் (Day)" subtitle={`${fmtTime(data.sunrise, tz)} → ${fmtTime(data.sunset, tz)}`} block={data.day} tz={tz} birthBird={data.birthBird} />
       <ScheduleTable title="இரவு தொழில் (Night)" subtitle={`${fmtTime(data.sunset, tz)} → ${fmtTime(data.nextSunrise, tz)}`} block={data.night} tz={tz} birthBird={data.birthBird} />
