@@ -501,7 +501,7 @@ function DetailScreen({
     theipirai: ["sleep", "walk", "die", "rule", "eat"],
   } as const;
 
-  const SUB_ORDER: ActivityKey[] = SUB_ORDERS[paksha];
+  const SUB_ORDER: readonly ActivityKey[] = SUB_ORDERS[paksha];
 
   // ✅ Exact Minutes (Replace with your chart values if needed)
   const SUB_DURATION_MINUTES: Record<
