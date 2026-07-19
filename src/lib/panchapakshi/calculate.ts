@@ -55,7 +55,21 @@ export interface PanchapakshiResult {
   nextSunrise: Date;
   day: DayBlock;
   night: DayBlock;
+  /** Horoscope (Lahiri sidereal, computed at the birth instant) */
+  horoscope: {
+    nakshatra: { index: number; pada: number };
+    moonRasi: number;
+    sunRasi: number;
+    lagna: { longitude: number; rasi: number };
+    yoga: number;
+    karana: { index: number; name: string };
+    birthWeekday: number; // local weekday at birth
+    ayanamsa: number;
+    sunSiderealLon: number;
+    moonSiderealLon: number;
+  };
 }
+
 
 function computeTithi(date: Date): number {
   const sunLon = Astronomy.SunPosition(date).elon;
