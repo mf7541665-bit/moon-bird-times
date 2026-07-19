@@ -2,13 +2,24 @@ import * as Astronomy from "astronomy-engine";
 import {
   activityFor,
   BIRD_ORDER,
-  birthBirdFromName,
   rulingBird,
   type ActivityKey,
   type BirdKey,
   type DayNight,
   type Paksha,
 } from "./tables";
+import {
+  ascendantSiderealLon,
+  birthBirdFromNakshatra,
+  karanaOf,
+  moonRasi,
+  moonSiderealLon,
+  nakshatraOf,
+  sunRasi,
+  sunSiderealLon,
+  yogaOf,
+} from "./horoscope";
+
 
 export interface BirthInput {
   name: string;
