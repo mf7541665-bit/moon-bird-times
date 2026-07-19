@@ -76,7 +76,9 @@ export const runPanchapakshi = createServerFn({ method: "POST" })
       nextSunrise: result.nextSunrise.toISOString(),
       day: serializeBlock(result.day),
       night: serializeBlock(result.night),
+      horoscope: result.horoscope,
     };
   });
+
 
 export type PanchapakshiApiResult = Awaited<ReturnType<typeof runPanchapakshi>>;
