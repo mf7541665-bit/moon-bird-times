@@ -2,13 +2,26 @@ import * as Astronomy from "astronomy-engine";
 import {
   activityFor,
   BIRD_ORDER,
-  birthBirdFromName,
   rulingBird,
   type ActivityKey,
   type BirdKey,
   type DayNight,
   type Paksha,
 } from "./tables";
+import {
+  ascendantSiderealLon,
+  birthBirdFromNakshatra,
+  karanaOf,
+  lahiriAyanamsa,
+  moonRasi,
+  moonSiderealLon,
+  nakshatraOf,
+  sunRasi,
+  sunSiderealLon,
+  yogaOf,
+} from "./horoscope";
+
+
 
 export interface BirthInput {
   name: string;
@@ -44,7 +57,21 @@ export interface PanchapakshiResult {
   nextSunrise: Date;
   day: DayBlock;
   night: DayBlock;
+  /** Horoscope (Lahiri sidereal, computed at the birth instant) */
+  horoscope: {
+    nakshatra: { index: number; pada: number };
+    moonRasi: number;
+    sunRasi: number;
+    lagna: { longitude: number; rasi: number };
+    yoga: number;
+    karana: { index: number; name: string };
+    birthWeekday: number; // local weekday at birth
+    ayanamsa: number;
+    sunSiderealLon: number;
+    moonSiderealLon: number;
+  };
 }
+
 
 function computeTithi(date: Date): number {
   const sunLon = Astronomy.SunPosition(date).elon;
@@ -88,19 +115,34 @@ export function computePanchapakshi(input: BirthInput): PanchapakshiResult {
   const birthLocal = new Date(input.isoLocal);
   const birthUtc = new Date(birthLocal.getTime() - input.tzOffsetMin * 60_000);
 
-  // Birth bird from birth-date paksha
+  // Birth-instant panchang (sidereal / Lahiri)
   const birthTithi = computeTithi(birthUtc);
   const birthPaksha: Paksha = birthTithi <= 15 ? "valarpirai" : "theipirai";
-  const birthBird = birthBirdFromName(input.name, birthPaksha);
+  const nak = nakshatraOf(birthUtc);
+  const birthBird = birthBirdFromNakshatra(nak.index, birthPaksha);
 
-  // Schedule is computed for the view-date (defaults to birth date, local at birth-place)
+  const lagnaLon = ascendantSiderealLon(birthUtc, input.latitude, input.longitude);
+  const horoscope = {
+    nakshatra: { index: nak.index, pada: nak.pada },
+    moonRasi: moonRasi(birthUtc),
+    sunRasi: sunRasi(birthUtc),
+    lagna: { longitude: lagnaLon, rasi: Math.floor(lagnaLon / 30) },
+    yoga: yogaOf(birthUtc).index,
+    karana: karanaOf(birthUtc),
+    birthWeekday: birthLocal.getDay(),
+    ayanamsa: lahiriAyanamsa(birthUtc),
+    sunSiderealLon: sunSiderealLon(birthUtc),
+    moonSiderealLon: moonSiderealLon(birthUtc),
+  };
+
+
+  // Schedule for view-date (defaults to birth date, local at birth place)
   let startOfLocalDayUtc: Date;
   if (input.viewDateLocal) {
     const [y, m, d] = input.viewDateLocal.split("-").map(Number);
     startOfLocalDayUtc = new Date(Date.UTC(y, m - 1, d, 0, 0, 0) - input.tzOffsetMin * 60_000);
   } else {
-    const localMs = birthLocal.getTime();
-    const bl = new Date(localMs);
+    const bl = birthLocal;
     startOfLocalDayUtc = new Date(
       Date.UTC(bl.getUTCFullYear(), bl.getUTCMonth(), bl.getUTCDate(), 0, 0, 0) -
         input.tzOffsetMin * 60_000,
@@ -108,13 +150,10 @@ export function computePanchapakshi(input: BirthInput): PanchapakshiResult {
   }
 
   const observer = new Astronomy.Observer(input.latitude, input.longitude, 0);
-
-  // First sunrise on/after the local-day start — precise to a second via SearchRiseSet.
   const sunrise = findSunEvent(startOfLocalDayUtc, observer, +1);
   const sunset = findSunEvent(sunrise, observer, -1);
   const nextSunrise = findSunEvent(sunset, observer, +1);
 
-  // Tithi/paksha for schedule: at sunrise of view day
   const tithi = computeTithi(sunrise);
   const paksha: Paksha = tithi <= 15 ? "valarpirai" : "theipirai";
 
@@ -124,5 +163,6 @@ export function computePanchapakshi(input: BirthInput): PanchapakshiResult {
   const day = buildBlock(weekday, paksha, "day", sunrise, sunset);
   const night = buildBlock(weekday, paksha, "night", sunset, nextSunrise);
 
-  return { birthBird, paksha, tithi, weekday, sunrise, sunset, nextSunrise, day, night };
+  return { birthBird, paksha, tithi, weekday, sunrise, sunset, nextSunrise, day, night, horoscope };
 }
+

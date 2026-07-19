@@ -4,8 +4,10 @@ import { useMutation } from "@tanstack/react-query";
 import { useState } from "react";
 import { User, Users, Calendar, Clock, MapPin, Loader2, Sparkles, ChevronLeft, ChevronRight, ArrowLeft } from "lucide-react";
 import { runPanchapakshi, type PanchapakshiApiResult, type PanchapakshiInput } from "@/lib/panchapakshi/api.functions";
-import { BIRDS, paksha, ACTIVITIES, type ActivityKey, type BirdKey } from "@/lib/panchapakshi/tables";
+import { BIRDS, ACTIVITIES, type ActivityKey, type BirdKey } from "@/lib/panchapakshi/tables";
+import { NAKSHATRAS, RASIS, YOGAS } from "@/lib/panchapakshi/horoscope";
 import heroImg from "@/assets/panchapakshi-hero.jpg";
+
 
 export const Route = createFileRoute("/")({
   component: PanchapakshiPage,
@@ -270,13 +272,20 @@ function InfoScreen({ data, name, place, viewDate, onViewDateChange, pending, on
           <dl className="divide-y divide-border/60 text-sm">
             <InfoRow label="பெயர்" value={name} />
             <InfoRow label="பிறந்த இடம்" value={place} />
+            <InfoRow label="ஜென்ம நட்சத்திரம்" value={`${NAKSHATRAS[data.horoscope.nakshatra.index - 1].ta} (${NAKSHATRAS[data.horoscope.nakshatra.index - 1].en}) · பாதம் ${data.horoscope.nakshatra.pada}`} />
             <InfoRow label="ஜென்ம பட்சி" value={`${BIRD_EMOJI[data.birthBird]} ${bird.ta}`} />
-            <InfoRow label="பிறப்பு பக்ஷம்" value={data.paksha === "valarpirai" ? "சுக்ல பக்ஷம்" : "க்ருஷ்ண பக்ஷம்"} />
+            <InfoRow label="ராசி (சந்திரன்)" value={RASIS[data.horoscope.moonRasi].ta} />
+            <InfoRow label="லக்னம்" value={RASIS[data.horoscope.lagna.rasi].ta} />
+            <InfoRow label="சூரிய ராசி" value={RASIS[data.horoscope.sunRasi].ta} />
+            <InfoRow label="யோகம்" value={YOGAS[data.horoscope.yoga - 1].ta} />
+            <InfoRow label="கரணம்" value={data.horoscope.karana.name} />
+            <InfoRow label="பிறப்பு பக்ஷம்" value={data.paksha === "valarpirai" ? "சுக்ல பக்ஷம் (வளர் பிறை)" : "க்ருஷ்ண பக்ஷம் (தேய் பிறை)"} />
             <InfoRow label="வாரம்" value={["ஞாயிறு","திங்கள்","செவ்வாய்","புதன்","வியாழன்","வெள்ளி","சனி"][data.weekday]} />
             <InfoRow label="திதி" value={String(data.tithi)} />
             <InfoRow label="சூரிய உதயம்" value={fmtTime(data.sunrise, data.input.tzOffsetMin)} />
             <InfoRow label="சூரிய அஸ்தமனம்" value={fmtTime(data.sunset, data.input.tzOffsetMin)} />
           </dl>
+
         </div>
 
         <button
@@ -343,8 +352,8 @@ function ActivitiesScreen({
   const SEQ =
     SEQUENCES[data.paksha === "valarpirai" ? "valarpirai" : "theipirai"][dayNight];
 
-  const startIndex =
-    typeof block.startIndex === "number" ? block.startIndex : 0;
+  const startIndex = 0;
+
 
   // ✅ Apply sequence rotation
   const slots = (block.slots || []).map((s, i) => {
@@ -499,7 +508,7 @@ function DetailScreen({
     theipirai: ["sleep", "walk", "die", "rule", "eat"],
   } as const;
 
-  const SUB_ORDER: ActivityKey[] = SUB_ORDERS[paksha];
+  const SUB_ORDER: readonly ActivityKey[] = SUB_ORDERS[paksha];
 
   // ✅ Exact Minutes (Replace with your chart values if needed)
   const SUB_DURATION_MINUTES: Record<
