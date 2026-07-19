@@ -129,13 +129,12 @@ export function computePanchapakshi(input: BirthInput): PanchapakshiResult {
     lagna: { longitude: lagnaLon, rasi: Math.floor(lagnaLon / 30) },
     yoga: yogaOf(birthUtc).index,
     karana: karanaOf(birthUtc),
-    birthWeekday: new Date(birthLocal.getTime()).getDay(),
-    ayanamsa: (moonSiderealLon(birthUtc), sunSiderealLon(birthUtc), // touch imports
-      // recompute ayanamsa via difference to keep single source
-      ((Astronomy.EclipticLongitude(Astronomy.Body.Moon, birthUtc) - moonSiderealLon(birthUtc)) % 360 + 360) % 360),
+    birthWeekday: birthLocal.getDay(),
+    ayanamsa: lahiriAyanamsa(birthUtc),
     sunSiderealLon: sunSiderealLon(birthUtc),
     moonSiderealLon: moonSiderealLon(birthUtc),
   };
+
 
   // Schedule for view-date (defaults to birth date, local at birth place)
   let startOfLocalDayUtc: Date;
