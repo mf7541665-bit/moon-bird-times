@@ -12,6 +12,7 @@ import {
   ascendantSiderealLon,
   birthBirdFromNakshatra,
   karanaOf,
+  lahiriAyanamsa,
   moonRasi,
   moonSiderealLon,
   nakshatraOf,
@@ -19,6 +20,7 @@ import {
   sunSiderealLon,
   yogaOf,
 } from "./horoscope";
+
 
 
 export interface BirthInput {
