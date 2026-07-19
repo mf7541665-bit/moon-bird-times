@@ -4,8 +4,10 @@ import { useMutation } from "@tanstack/react-query";
 import { useState } from "react";
 import { User, Users, Calendar, Clock, MapPin, Loader2, Sparkles, ChevronLeft, ChevronRight, ArrowLeft } from "lucide-react";
 import { runPanchapakshi, type PanchapakshiApiResult, type PanchapakshiInput } from "@/lib/panchapakshi/api.functions";
-import { BIRDS, paksha, ACTIVITIES, type ActivityKey, type BirdKey } from "@/lib/panchapakshi/tables";
+import { BIRDS, ACTIVITIES, type ActivityKey, type BirdKey } from "@/lib/panchapakshi/tables";
+import { NAKSHATRAS, RASIS, YOGAS } from "@/lib/panchapakshi/horoscope";
 import heroImg from "@/assets/panchapakshi-hero.jpg";
+
 
 export const Route = createFileRoute("/")({
   component: PanchapakshiPage,
