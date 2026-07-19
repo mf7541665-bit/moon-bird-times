@@ -345,8 +345,8 @@ function ActivitiesScreen({
   const SEQ =
     SEQUENCES[data.paksha === "valarpirai" ? "valarpirai" : "theipirai"][dayNight];
 
-  const startIndex =
-    typeof block.startIndex === "number" ? block.startIndex : 0;
+  const startIndex = 0;
+
 
   // ✅ Apply sequence rotation
   const slots = (block.slots || []).map((s, i) => {
