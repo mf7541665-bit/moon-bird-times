@@ -118,7 +118,7 @@ export function computePanchapakshi(input: BirthInput): PanchapakshiResult {
   // Birth-instant panchang (sidereal / Lahiri)
   const birthTithi = computeTithi(birthUtc);
   const birthPaksha: Paksha = birthTithi <= 15 ? "valarpirai" : "theipirai";
-  const nak = nakshatraOf(birthUtc);
+  const nak = nakshatraOf(birthUtc, input.latitude, input.longitude);
   const birthBird = birthBirdFromNakshatra(nak.index, birthPaksha);
 
   const lagnaLon = ascendantSiderealLon(birthUtc, input.latitude, input.longitude);
