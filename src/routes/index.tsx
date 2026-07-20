@@ -75,6 +75,7 @@ function PanchapakshiPage() {
   const [minute, setMinute] = useState("");
   const [ampm, setAmpm] = useState<"AM" | "PM">("AM");
   const [place, setPlace] = useState("");
+  const [placeCoords, setPlaceCoords] = useState<{ lat: number; lon: number } | null>(null);
   const [viewDate, setViewDate] = useState<string>(todayLocalYmd());
 
   function submit(vd: string, advance: boolean) {
@@ -86,7 +87,10 @@ function PanchapakshiPage() {
         year: parseInt(year, 10),
         hour: parseInt(hour, 10),
         minute: parseInt(minute, 10),
-        ampm, place, viewDate: vd,
+        ampm, place,
+        latitude: placeCoords?.lat,
+        longitude: placeCoords?.lon,
+        viewDate: vd,
       },
       { onSuccess: () => { if (advance) setScreen("info"); } },
     );
