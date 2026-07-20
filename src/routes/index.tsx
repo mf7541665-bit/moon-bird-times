@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useMutation } from "@tanstack/react-query";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { User, Users, Calendar, Clock, MapPin, Loader2, Sparkles, ChevronLeft, ChevronRight, ArrowLeft } from "lucide-react";
 import { runPanchapakshi, type PanchapakshiApiResult, type PanchapakshiInput } from "@/lib/panchapakshi/api.functions";
 import { BIRDS, ACTIVITIES, type ActivityKey, type BirdKey } from "@/lib/panchapakshi/tables";
@@ -75,6 +75,7 @@ function PanchapakshiPage() {
   const [minute, setMinute] = useState("");
   const [ampm, setAmpm] = useState<"AM" | "PM">("AM");
   const [place, setPlace] = useState("");
+  const [placeCoords, setPlaceCoords] = useState<{ lat: number; lon: number } | null>(null);
   const [viewDate, setViewDate] = useState<string>(todayLocalYmd());
 
   function submit(vd: string, advance: boolean) {
@@ -86,7 +87,10 @@ function PanchapakshiPage() {
         year: parseInt(year, 10),
         hour: parseInt(hour, 10),
         minute: parseInt(minute, 10),
-        ampm, place, viewDate: vd,
+        ampm, place,
+        latitude: placeCoords?.lat,
+        longitude: placeCoords?.lon,
+        viewDate: vd,
       },
       { onSuccess: () => { if (advance) setScreen("info"); } },
     );
@@ -110,7 +114,7 @@ function PanchapakshiPage() {
         onSubmit={onSubmit}
         pending={mut.isPending}
         error={mut.isError ? (mut.error as Error).message : null}
-        {...{ name, setName, gender, setGender, day, setDay, month, setMonth, year, setYear, hour, setHour, minute, setMinute, ampm, setAmpm, place, setPlace }}
+        {...{ name, setName, gender, setGender, day, setDay, month, setMonth, year, setYear, hour, setHour, minute, setMinute, ampm, setAmpm, place, setPlace, placeCoords, setPlaceCoords }}
       />
     );
   }
@@ -171,6 +175,8 @@ function FormScreen(props: {
   minute: string; setMinute: (v: string) => void;
   ampm: "AM" | "PM"; setAmpm: (v: "AM" | "PM") => void;
   place: string; setPlace: (v: string) => void;
+  placeCoords: { lat: number; lon: number } | null;
+  setPlaceCoords: (v: { lat: number; lon: number } | null) => void;
 }) {
   const { onSubmit, pending, error } = props;
   return (
@@ -215,9 +221,12 @@ function FormScreen(props: {
             </Field>
 
             <Field label="பிறந்த இடம்">
-              <IconInput icon={<MapPin className="h-5 w-5" />}>
-                <input required value={props.place} onChange={(e) => props.setPlace(e.target.value)} placeholder="பிறந்த இடத்தை உள்ளிடவும்" className="w-full bg-transparent outline-none text-sm" maxLength={200} />
-              </IconInput>
+              <PlaceAutocomplete
+                value={props.place}
+                onChange={(v) => { props.setPlace(v); props.setPlaceCoords(null); }}
+                onSelect={(s) => { props.setPlace(s.display); props.setPlaceCoords({ lat: s.lat, lon: s.lon }); }}
+                selected={props.placeCoords}
+              />
             </Field>
 
             <div className="flex justify-center pt-2">
@@ -738,3 +747,101 @@ function fmtTimeSec(iso: string, tzOffsetMin: number) {
   const h12 = ((hh + 11) % 12) + 1;
   return `${h12.toString().padStart(2, "0")}:${mm}:${ss} ${hh < 12 ? "am" : "pm"}`;
 }
+
+type PlaceSuggestion = { display: string; lat: number; lon: number };
+
+function PlaceAutocomplete({
+  value, onChange, onSelect, selected,
+}: {
+  value: string;
+  onChange: (v: string) => void;
+  onSelect: (s: PlaceSuggestion) => void;
+  selected: { lat: number; lon: number } | null;
+}) {
+  const [suggestions, setSuggestions] = useState<PlaceSuggestion[]>([]);
+  const [open, setOpen] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const abortRef = useRef<AbortController | null>(null);
+  const boxRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    if (selected) return; // don't re-query after user picks
+    const q = value.trim();
+    if (q.length < 3) { setSuggestions([]); return; }
+    const handle = setTimeout(async () => {
+      abortRef.current?.abort();
+      const ac = new AbortController();
+      abortRef.current = ac;
+      setLoading(true);
+      try {
+        const res = await fetch(
+          `https://nominatim.openstreetmap.org/search?format=json&addressdetails=0&limit=6&q=${encodeURIComponent(q)}`,
+          { signal: ac.signal, headers: { Accept: "application/json" } },
+        );
+        const rows = (await res.json()) as Array<{ lat: string; lon: string; display_name: string }>;
+        setSuggestions(rows.map((r) => ({ display: r.display_name, lat: parseFloat(r.lat), lon: parseFloat(r.lon) })));
+        setOpen(true);
+      } catch {
+        /* aborted or offline */
+      } finally {
+        setLoading(false);
+      }
+    }, 350);
+    return () => clearTimeout(handle);
+  }, [value, selected]);
+
+  useEffect(() => {
+    function onDoc(e: MouseEvent) {
+      if (boxRef.current && !boxRef.current.contains(e.target as Node)) setOpen(false);
+    }
+    document.addEventListener("mousedown", onDoc);
+    return () => document.removeEventListener("mousedown", onDoc);
+  }, []);
+
+  return (
+    <div ref={boxRef} className="relative">
+      <div className="flex items-center gap-3">
+        <span className="text-muted-foreground shrink-0"><MapPin className="h-5 w-5" /></span>
+        <div className="flex-1 rounded-full border border-input bg-background px-4 py-2.5 flex items-center gap-2">
+          <input
+            required
+            value={value}
+            onChange={(e) => { onChange(e.target.value); setOpen(true); }}
+            onFocus={() => { if (suggestions.length) setOpen(true); }}
+            placeholder="ஊர் / நகரம் தேடவும்"
+            className="w-full bg-transparent outline-none text-sm"
+            maxLength={200}
+            autoComplete="off"
+          />
+          {loading && <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />}
+          {selected && !loading && (
+            <span className="text-[10px] font-medium text-emerald-700 whitespace-nowrap">
+              {selected.lat.toFixed(3)}°, {selected.lon.toFixed(3)}°
+            </span>
+          )}
+        </div>
+      </div>
+      {open && suggestions.length > 0 && (
+        <ul className="absolute z-20 mt-1 left-8 right-0 max-h-64 overflow-auto rounded-2xl border border-border bg-popover shadow-lg text-sm">
+          {suggestions.map((s, i) => (
+            <li key={`${s.lat},${s.lon},${i}`}>
+              <button
+                type="button"
+                onClick={() => { onSelect(s); setOpen(false); }}
+                className="w-full text-left px-4 py-2 hover:bg-accent"
+              >
+                {s.display}
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
+      {!selected && value.trim().length >= 3 && (
+        <p className="mt-1 pl-8 text-[11px] text-muted-foreground">
+          துல்லியமான ஜென்ம நட்சத்திரத்திற்கு பட்டியலில் ஒரு இடத்தைத் தேர்ந்தெடுக்கவும்.
+        </p>
+      )}
+    </div>
+  );
+}
+

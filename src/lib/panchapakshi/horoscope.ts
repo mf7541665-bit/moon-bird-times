@@ -78,9 +78,10 @@ export const KARANAS_FIXED = ["Shakuni", "Chatushpada", "Naga", "Kimstughna"];
 //   Accurate to ~1′ over the modern era — well below one pada.
 // ─────────────────────────────────────────────────────────────
 export function lahiriAyanamsa(date: Date): number {
+  // Chitrapaksha (Lahiri): 23°51'11.4" at J2000.0, precession ≈ 50.2879"/yr.
   const J2000ms = Date.UTC(2000, 0, 1, 12, 0, 0);
   const years = (date.getTime() - J2000ms) / (365.25 * 86400_000);
-  return 23.85681 + years * (50.29 / 3600);
+  return 23.85317 + years * (50.2879 / 3600);
 }
 
 function norm360(x: number) { return ((x % 360) + 360) % 360; }

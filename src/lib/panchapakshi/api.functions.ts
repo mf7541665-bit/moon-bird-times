@@ -12,6 +12,8 @@ const InputSchema = z.object({
   minute: z.number().int().min(0).max(59),
   ampm: z.enum(["AM", "PM"]),
   place: z.string().trim().min(1).max(200),
+  latitude: z.number().min(-90).max(90).optional(),
+  longitude: z.number().min(-180).max(180).optional(),
   tzOffsetMin: z.number().int().min(-720).max(840).optional(),
   viewDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
 });
@@ -32,7 +34,10 @@ async function geocode(place: string): Promise<{ lat: number; lon: number; displ
 export const runPanchapakshi = createServerFn({ method: "POST" })
   .inputValidator((data: unknown) => InputSchema.parse(data))
   .handler(async ({ data }) => {
-    const geo = await geocode(data.place);
+    const geo =
+      data.latitude != null && data.longitude != null
+        ? { lat: data.latitude, lon: data.longitude, display: data.place }
+        : await geocode(data.place);
     // Timezone: use provided; else India-band gets IST; else approximate from longitude.
     const inIndia = geo.lat >= 6 && geo.lat <= 37 && geo.lon >= 68 && geo.lon <= 98;
     const tzOffsetMin =
