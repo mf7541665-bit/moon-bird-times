@@ -114,7 +114,7 @@ function PanchapakshiPage() {
         onSubmit={onSubmit}
         pending={mut.isPending}
         error={mut.isError ? (mut.error as Error).message : null}
-        {...{ name, setName, gender, setGender, day, setDay, month, setMonth, year, setYear, hour, setHour, minute, setMinute, ampm, setAmpm, place, setPlace }}
+        {...{ name, setName, gender, setGender, day, setDay, month, setMonth, year, setYear, hour, setHour, minute, setMinute, ampm, setAmpm, place, setPlace, placeCoords, setPlaceCoords }}
       />
     );
   }
