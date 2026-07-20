@@ -32,7 +32,7 @@ const SEQUENCES = {
     night: ["die", "walk", "sleep", "eat", "rule"]
   },
   theipirai: {
-    day:   ["walk", "eat", "die", "sleep", "rule"],
+    day:   ["rule", "sleep", "die", "eat", "walk"],
     night: ["rule", "die", "walk", "sleep", "eat"]
   }
 } as const;
@@ -63,13 +63,13 @@ const BASES: Record<Paksha, BaseTable[]> = {
     { day: 1, night: 2 }, // Sat
   ],
   theipirai: [
-    { day: 3, night: 4 }, // Sun
-    { day: 0, night: 1 }, // Mon
-    { day: 3, night: 4 }, // Tue
-    { day: 1, night: 3 }, // Wed
-    { day: 4, night: 2 }, // Thu
-    { day: 2, night: 0 }, // Fri
-    { day: 0, night: 1 }, // Sat
+    { day: 1, night: 4 }, // Sun
+    { day: 3, night: 1 }, // Mon
+    { day: 1, night: 4 }, // Tue
+    { day: 4, night: 3 }, // Wed
+    { day: 2, night: 2 }, // Thu
+    { day: 0, night: 0 }, // Fri
+    { day: 3, night: 1 }, // Sat
   ],
 };
 
@@ -134,7 +134,7 @@ type VowelGroup = "a" | "u" | "e" | "o" | "ai";
 
 const BIRTH_BIRD: Record<Paksha, Record<VowelGroup, BirdKey>> = {
   valarpirai: { a: "vulture", u: "owl", e: "crow", o: "cock", ai: "peacock" },
-  theipirai:  { a: "cock",    u: "owl", e: "peacock", o: "crow", ai: "vulture" },
+  theipirai:  { a: "vulture", u: "owl", e: "crow", o: "cock", ai: "peacock" },
 };
 
 export function vowelGroupOf(name: string): VowelGroup {
