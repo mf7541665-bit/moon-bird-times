@@ -175,6 +175,8 @@ function FormScreen(props: {
   minute: string; setMinute: (v: string) => void;
   ampm: "AM" | "PM"; setAmpm: (v: "AM" | "PM") => void;
   place: string; setPlace: (v: string) => void;
+  placeCoords: { lat: number; lon: number } | null;
+  setPlaceCoords: (v: { lat: number; lon: number } | null) => void;
 }) {
   const { onSubmit, pending, error } = props;
   return (
