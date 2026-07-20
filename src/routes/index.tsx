@@ -221,9 +221,12 @@ function FormScreen(props: {
             </Field>
 
             <Field label="பிறந்த இடம்">
-              <IconInput icon={<MapPin className="h-5 w-5" />}>
-                <input required value={props.place} onChange={(e) => props.setPlace(e.target.value)} placeholder="பிறந்த இடத்தை உள்ளிடவும்" className="w-full bg-transparent outline-none text-sm" maxLength={200} />
-              </IconInput>
+              <PlaceAutocomplete
+                value={props.place}
+                onChange={(v) => { props.setPlace(v); props.setPlaceCoords(null); }}
+                onSelect={(s) => { props.setPlace(s.display); props.setPlaceCoords({ lat: s.lat, lon: s.lon }); }}
+                selected={props.placeCoords}
+              />
             </Field>
 
             <div className="flex justify-center pt-2">
