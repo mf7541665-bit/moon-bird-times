@@ -283,11 +283,8 @@ function InfoScreen({ data, name, place, viewDate, onViewDateChange, pending, on
             <InfoRow label="பிறந்த இடம்" value={place} />
             <InfoRow label="ஜென்ம நட்சத்திரம்" value={`${NAKSHATRAS[data.horoscope.nakshatra.index - 1].ta} (${NAKSHATRAS[data.horoscope.nakshatra.index - 1].en}) `} />
             <InfoRow label="ஜென்ம பட்சி" value={`${BIRD_EMOJI[data.birthBird]} ${bird.ta}`} />
-            <InfoRow label="யோகம்" value={YOGAS[data.horoscope.yoga - 1].ta} />
-            <InfoRow label="கரணம்" value={data.horoscope.karana.name} />
             <InfoRow label="பிறப்பு பக்ஷம்" value={data.paksha === "valarpirai" ? "சுக்ல பக்ஷம் (வளர் பிறை)" : "க்ருஷ்ண பக்ஷம் (தேய் பிறை)"} />
             <InfoRow label="வாரம்" value={["ஞாயிறு","திங்கள்","செவ்வாய்","புதன்","வியாழன்","வெள்ளி","சனி"][data.weekday]} />
-            <InfoRow label="திதி" value={String(data.tithi)} />
             <InfoRow label="சூரிய உதயம்" value={fmtTime(data.sunrise, data.input.tzOffsetMin)} />
             <InfoRow label="சூரிய அஸ்தமனம்" value={fmtTime(data.sunset, data.input.tzOffsetMin)} />
           </dl>
