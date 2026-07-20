@@ -95,6 +95,28 @@ export function moonSiderealLon(date: Date): number {
   return norm360(trop - lahiriAyanamsa(date));
 }
 
+/** Topocentric apparent Moon ecliptic longitude (tropical, of date, degrees).
+ *  Includes observer parallax (up to ~0.95° in longitude) — enough to shift
+ *  a nakshatra pada near a boundary. */
+function moonTropoOfDateTopocentric(
+  date: Date, latDeg: number, lonDeg: number,
+): number {
+  const obs = new Astronomy.Observer(latDeg, lonDeg, 0);
+  // ofdate=true → equator of date; aberration=true; observer arg adds parallax.
+  const eq = Astronomy.Equator(Astronomy.Body.Moon, date, obs, true, true);
+  const D = Math.PI / 180;
+  const ra = eq.ra * 15 * D;   // hours → radians
+  const dec = eq.dec * D;
+  const eps = meanObliquity(date) * D;
+  const sinL = Math.sin(ra) * Math.cos(eps) + Math.tan(dec) * Math.sin(eps);
+  const cosL = Math.cos(ra);
+  return norm360(Math.atan2(sinL, cosL) / D);
+}
+
+export function moonSiderealLonTopo(date: Date, lat: number, lon: number): number {
+  return norm360(moonTropoOfDateTopocentric(date, lat, lon) - lahiriAyanamsa(date));
+}
+
 // ─────────────────────────────────────────────────────────────
 // Nakshatra / Rasi / Yoga / Tithi / Karana
 // ─────────────────────────────────────────────────────────────
@@ -107,8 +129,12 @@ export interface NakshatraInfo {
 const STAR = 360 / 27; // 13°20′
 const PADA = STAR / 4; //  3°20′
 
-export function nakshatraOf(date: Date): NakshatraInfo {
-  const s = moonSiderealLon(date);
+/** Compute nakshatra & pada. If lat/lon are given, uses topocentric Moon
+ *  (recommended for birth charts — geocentric can be off by up to one pada). */
+export function nakshatraOf(date: Date, lat?: number, lon?: number): NakshatraInfo {
+  const s = (lat !== undefined && lon !== undefined)
+    ? moonSiderealLonTopo(date, lat, lon)
+    : moonSiderealLon(date);
   const idx = Math.floor(s / STAR);       // 0..26
   const rem = s - idx * STAR;
   const pada = Math.min(4, Math.floor(rem / PADA) + 1);
