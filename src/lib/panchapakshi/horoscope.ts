@@ -211,15 +211,80 @@ export function ascendantSiderealLon(date: Date, latDeg: number, lonDeg: number)
 //  17–21  Anuradha..Uttara Ashadha  Cock   / Owl
 //  22–27  Shravana..Revati         Peacock / Vulture
 // ─────────────────────────────────────────────────────────────
-const BIRD_BY_NAK: { bright: BirdKey; dark: BirdKey }[] = [
-  ...Array(5).fill({ bright: "vulture", dark: "peacock" }),
-  ...Array(6).fill({ bright: "owl", dark: "cock" }),
-  ...Array(5).fill({ bright: "crow", dark: "crow" }),
-  ...Array(5).fill({ bright: "cock", dark: "owl" }),
-  ...Array(6).fill({ bright: "peacock", dark: "vulture" }),
+// types
+export type BirdKey =
+  | "vulture"
+  | "owl"
+  | "crow"
+  | "cock"
+  | "peacock";
+
+export type Paksha = "valarpirai" | "theipirai";
+
+
+// Nakshatra → Janma Pakshi
+// 27 Nakshatras order:
+// Ashwini to Revathi
+
+const BIRD_BY_NAK: BirdKey[] = [
+
+  // 1 - 5
+  // Ashwini, Bharani, Karthigai, Rohini, Mrigashirsha
+  "vulture",
+  "vulture",
+  "vulture",
+  "vulture",
+  "vulture",
+
+  // 6 - 11
+  // Thiruvathirai, Punarpoosam, Poosam, Ayilyam, Magam, Pooram
+  "owl",
+  "owl",
+  "owl",
+  "owl",
+  "owl",
+  "owl",
+
+  // 12 - 16
+  // Uthiram, Hastham, Chithirai, Swathi, Vishakam
+  "crow",
+  "crow",
+  "crow",
+  "crow",
+  "crow",
+
+  // 17 - 21
+  // Anusham, Kettai, Moolam, Pooradam, Uthiradam
+  "cock",
+  "cock",
+  "cock",
+  "cock",
+  "cock",
+
+  // 22 - 27
+  // Thiruvonam, Avittam, Sathayam, Poorattathi, Uthirattathi, Revathi
+  "peacock",
+  "peacock",
+  "peacock",
+  "peacock",
+  "peacock",
+  "peacock",
 ];
 
-export function birthBirdFromNakshatra(nakIndex: number, paksha: Paksha): BirdKey {
-  const row = BIRD_BY_NAK[Math.max(0, Math.min(26, nakIndex - 1))];
-  return paksha === "valarpirai" ? row.bright : row.dark;
+
+// Janma Pakshi calculation
+// Paksha is NOT used here.
+// Same bird for Valarpirai + Theipirai.
+
+export function birthBirdFromNakshatra(
+  nakIndex: number,
+  _paksha: Paksha
+): BirdKey {
+
+  const index = Math.max(
+    0,
+    Math.min(26, nakIndex - 1)
+  );
+
+  return BIRD_BY_NAK[index];
 }
