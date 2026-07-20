@@ -201,24 +201,115 @@ function FormScreen(props: {
 
             <Field label="பிறந்த தேதி">
               <div className="flex items-center gap-3">
-                <Calendar className="h-5 w-5 text-muted-foreground shrink-0" />
-                <NumBox value={props.day} onChange={props.setDay} placeholder="நாள்" min={1} max={31} />
-                <NumBox value={props.month} onChange={props.setMonth} placeholder="மாதம்" min={1} max={12} />
-                <NumBox value={props.year} onChange={props.setYear} placeholder="ஆண்டு" min={1900} max={2100} wide />
-              </div>
-            </Field>
+  <Calendar className="h-5 w-5 text-muted-foreground shrink-0" />
 
-            <Field label="பிறந்த நேரம்">
-              <div className="flex items-center gap-3">
-                <Clock className="h-5 w-5 text-muted-foreground shrink-0" />
-                <NumBox value={props.hour} onChange={props.setHour} placeholder="மணி" min={1} max={12} />
-                <NumBox value={props.minute} onChange={props.setMinute} placeholder="நிமிடம்" min={0} max={59} />
-                <div className="flex rounded-xl border border-input overflow-hidden">
-                  <button type="button" onClick={() => props.setAmpm("AM")} className={`px-3 py-2 text-sm ${props.ampm === "AM" ? "" : "bg-transparent"}`} style={props.ampm === "AM" ? { background: "var(--brand)", color: "var(--brand-foreground)" } : undefined}>AM</button>
-                  <button type="button" onClick={() => props.setAmpm("PM")} className={`px-3 py-2 text-sm ${props.ampm === "PM" ? "" : "bg-transparent"}`} style={props.ampm === "PM" ? { background: "var(--brand)", color: "var(--brand-foreground)" } : undefined}>PM</button>
-                </div>
-              </div>
+  {/* Day */}
+  <select
+    value={props.day}
+    onChange={(e) => props.setDay(Number(e.target.value))}
+    className="border rounded px-2 py-1"
+  >
+    {[...Array(31)].map((_, i) => (
+      <option key={i + 1} value={i + 1}>
+        {i + 1}
+      </option>
+    ))}
+  </select>
+
+  {/* Month */}
+  <select
+    value={props.month}
+    onChange={(e) => props.setMonth(Number(e.target.value))}
+    className="border rounded px-2 py-1"
+  >
+    {[...Array(12)].map((_, i) => (
+      <option key={i + 1} value={i + 1}>
+        {i + 1}
+      </option>
+    ))}
+  </select>
+
+  {/* Year */}
+  <select
+    value={props.year}
+    onChange={(e) => props.setYear(Number(e.target.value))}
+    className="border rounded px-2 py-1"
+  >
+    {Array.from({ length: 201 }, (_, i) => 2026 - i).map((year) => (
+      <option key={year} value={year}>
+        {year}
+      </option>
+    ))}
+  </select>
+</div>
             </Field>
+<Field label="பிறந்த நேரம்">
+  <div className="flex items-center gap-3">
+    <Clock className="h-5 w-5 text-muted-foreground shrink-0" />
+
+    {/* Hour Dropdown (01–12) */}
+    <select
+      value={props.hour}
+      onChange={(e) => props.setHour(Number(e.target.value))}
+      className="px-3 py-2 rounded-xl border border-input bg-background text-sm"
+    >
+      {Array.from({ length: 12 }, (_, i) => {
+        const val = i + 1; // 1–12
+        return (
+          <option key={val} value={val}>
+            {String(val).padStart(2, "0")}
+          </option>
+        );
+      })}
+    </select>
+
+    {/* Minute Dropdown (00–59) */}
+    <select
+      value={props.minute}
+      onChange={(e) => props.setMinute(Number(e.target.value))}
+      className="px-3 py-2 rounded-xl border border-input bg-background text-sm"
+    >
+      {Array.from({ length: 60 }, (_, i) => (
+        <option key={i} value={i}>
+          {String(i).padStart(2, "0")}
+        </option>
+      ))}
+    </select>
+
+    {/* AM / PM Toggle */}
+    <div className="flex rounded-xl border border-input overflow-hidden">
+      <button
+        type="button"
+        onClick={() => props.setAmpm("AM")}
+        className={`px-3 py-2 text-sm transition ${
+          props.ampm === "AM" ? "font-semibold" : "opacity-70"
+        }`}
+        style={
+          props.ampm === "AM"
+            ? { background: "var(--brand)", color: "var(--brand-foreground)" }
+            : undefined
+        }
+      >
+        AM
+      </button>
+
+      <button
+        type="button"
+        onClick={() => props.setAmpm("PM")}
+        className={`px-3 py-2 text-sm transition ${
+          props.ampm === "PM" ? "font-semibold" : "opacity-70"
+        }`}
+        style={
+          props.ampm === "PM"
+            ? { background: "var(--brand)", color: "var(--brand-foreground)" }
+            : undefined
+        }
+      >
+        PM
+      </button>
+    </div>
+  </div>
+</Field>
 
             <Field label="பிறந்த இடம்">
               <PlaceAutocomplete
