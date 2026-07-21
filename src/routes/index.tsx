@@ -74,8 +74,8 @@ function PanchapakshiPage() {
   const [day, setDay] = useState("");
   const [month, setMonth] = useState("");
   const [year, setYear] = useState("");
-  const [hour, setHour] = useState("");
-  const [minute, setMinute] = useState("");
+  const [hour, setHour] = useState("6");
+  const [minute, setMinute] = useState("0");
   const [ampm, setAmpm] = useState<"AM" | "PM">("AM");
   const [place, setPlace] = useState("");
   const [placeCoords, setPlaceCoords] = useState<{ lat: number; lon: number } | null>(null);
