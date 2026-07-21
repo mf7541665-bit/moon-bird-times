@@ -328,6 +328,10 @@ function InfoScreen({ data, name, place, viewDate, onViewDateChange, pending, on
 
         </div>
 
+        <div className="mt-6">
+          <PadupatchiCard data={data} />
+        </div>
+
         <button
           onClick={onNext}
           className="btn-brand mt-8 w-full rounded-full py-3 font-bold inline-flex items-center justify-center gap-2"
