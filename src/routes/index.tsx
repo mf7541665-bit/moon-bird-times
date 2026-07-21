@@ -1,3 +1,5 @@
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-4563342995680482"
+     crossorigin="anonymous"></script>
 import { createFileRoute } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useMutation } from "@tanstack/react-query";
@@ -7,9 +9,6 @@ import { runPanchapakshi, type PanchapakshiApiResult, type PanchapakshiInput } f
 import { BIRDS, ACTIVITIES, type ActivityKey, type BirdKey } from "@/lib/panchapakshi/tables";
 import { NAKSHATRAS, RASIS, YOGAS } from "@/lib/panchapakshi/horoscope";
 import heroImg from "@/assets/panchapakshi-hero.jpg";
-import { searchOfflinePlaces, formatOfflinePlace, type OfflinePlace } from "@/lib/panchapakshi/places";
-import { CircularTimePicker } from "@/components/panchapakshi/CircularTimePicker";
-import { PadupatchiCard } from "@/components/panchapakshi/PadupatchiCard";
 
 
 export const Route = createFileRoute("/")({
@@ -74,8 +73,8 @@ function PanchapakshiPage() {
   const [day, setDay] = useState("");
   const [month, setMonth] = useState("");
   const [year, setYear] = useState("");
-  const [hour, setHour] = useState("6");
-  const [minute, setMinute] = useState("0");
+  const [hour, setHour] = useState("");
+  const [minute, setMinute] = useState("");
   const [ampm, setAmpm] = useState<"AM" | "PM">("AM");
   const [place, setPlace] = useState("");
   const [placeCoords, setPlaceCoords] = useState<{ lat: number; lon: number } | null>(null);
@@ -209,7 +208,7 @@ function FormScreen(props: {
   {/* Day */}
   <select
     value={props.day}
-    onChange={(e) => props.setDay(e.target.value)}
+    onChange={(e) => props.setDay(Number(e.target.value))}
     className="border rounded px-2 py-1"
   >
     {[...Array(31)].map((_, i) => (
@@ -222,7 +221,7 @@ function FormScreen(props: {
   {/* Month */}
   <select
     value={props.month}
-    onChange={(e) => props.setMonth(e.target.value)}
+    onChange={(e) => props.setMonth(Number(e.target.value))}
     className="border rounded px-2 py-1"
   >
     {[...Array(12)].map((_, i) => (
@@ -235,7 +234,7 @@ function FormScreen(props: {
   {/* Year */}
   <select
     value={props.year}
-    onChange={(e) => props.setYear(e.target.value)}
+    onChange={(e) => props.setYear(Number(e.target.value))}
     className="border rounded px-2 py-1"
   >
     {Array.from({ length: 201 }, (_, i) => 2026 - i).map((year) => (
@@ -247,14 +246,71 @@ function FormScreen(props: {
 </div>
             </Field>
 <Field label="பிறந்த நேரம்">
-  <CircularTimePicker
-    hour={props.hour}
-    minute={props.minute}
-    ampm={props.ampm}
-    setHour={props.setHour}
-    setMinute={props.setMinute}
-    setAmpm={props.setAmpm}
-  />
+  <div className="flex items-center gap-3">
+    <Clock className="h-5 w-5 text-muted-foreground shrink-0" />
+
+    {/* Hour Dropdown (01–12) */}
+    <select
+      value={props.hour}
+      onChange={(e) => props.setHour(Number(e.target.value))}
+      className="px-3 py-2 rounded-xl border border-input bg-background text-sm"
+    >
+      {Array.from({ length: 12 }, (_, i) => {
+        const val = i + 1; // 1–12
+        return (
+          <option key={val} value={val}>
+            {String(val).padStart(2, "0")}
+          </option>
+        );
+      })}
+    </select>
+
+    {/* Minute Dropdown (00–59) */}
+    <select
+      value={props.minute}
+      onChange={(e) => props.setMinute(Number(e.target.value))}
+      className="px-3 py-2 rounded-xl border border-input bg-background text-sm"
+    >
+      {Array.from({ length: 60 }, (_, i) => (
+        <option key={i} value={i}>
+          {String(i).padStart(2, "0")}
+        </option>
+      ))}
+    </select>
+
+    {/* AM / PM Toggle */}
+    <div className="flex rounded-xl border border-input overflow-hidden">
+      <button
+        type="button"
+        onClick={() => props.setAmpm("AM")}
+        className={`px-3 py-2 text-sm transition ${
+          props.ampm === "AM" ? "font-semibold" : "opacity-70"
+        }`}
+        style={
+          props.ampm === "AM"
+            ? { background: "var(--brand)", color: "var(--brand-foreground)" }
+            : undefined
+        }
+      >
+        AM
+      </button>
+
+      <button
+        type="button"
+        onClick={() => props.setAmpm("PM")}
+        className={`px-3 py-2 text-sm transition ${
+          props.ampm === "PM" ? "font-semibold" : "opacity-70"
+        }`}
+        style={
+          props.ampm === "PM"
+            ? { background: "var(--brand)", color: "var(--brand-foreground)" }
+            : undefined
+        }
+      >
+        PM
+      </button>
+    </div>
+  </div>
 </Field>
 
             <Field label="பிறந்த இடம்">
@@ -326,10 +382,6 @@ function InfoScreen({ data, name, place, viewDate, onViewDateChange, pending, on
             <InfoRow label="சூரிய அஸ்தமனம்" value={fmtTime(data.sunset, data.input.tzOffsetMin)} />
           </dl>
 
-        </div>
-
-        <div className="mt-6">
-          <PadupatchiCard data={data} />
         </div>
 
         <button
@@ -802,17 +854,7 @@ function PlaceAutocomplete({
   useEffect(() => {
     if (selected) return; // don't re-query after user picks
     const q = value.trim();
-    if (q.length < 2) { setSuggestions([]); return; }
-
-    // 1. Instant offline results (India / TN dataset)
-    const offline = searchOfflinePlaces(q, 6).map<PlaceSuggestion>((p: OfflinePlace) => ({
-      display: `${formatOfflinePlace(p)} · (offline)`,
-      lat: p.lat,
-      lon: p.lon,
-    }));
-    if (offline.length) { setSuggestions(offline); setOpen(true); }
-
-    if (q.length < 3) return;
+    if (q.length < 3) { setSuggestions([]); return; }
     const handle = setTimeout(async () => {
       abortRef.current?.abort();
       const ac = new AbortController();
@@ -824,15 +866,7 @@ function PlaceAutocomplete({
           { signal: ac.signal, headers: { Accept: "application/json" } },
         );
         const rows = (await res.json()) as Array<{ lat: string; lon: string; display_name: string }>;
-        const online = rows.map((r) => ({ display: r.display_name, lat: parseFloat(r.lat), lon: parseFloat(r.lon) }));
-        // Merge, dedupe by rounded coords, keep offline first
-        const seen = new Set(offline.map((s) => `${s.lat.toFixed(2)},${s.lon.toFixed(2)}`));
-        const merged = [...offline];
-        for (const o of online) {
-          const k = `${o.lat.toFixed(2)},${o.lon.toFixed(2)}`;
-          if (!seen.has(k)) { merged.push(o); seen.add(k); }
-        }
-        setSuggestions(merged);
+        setSuggestions(rows.map((r) => ({ display: r.display_name, lat: parseFloat(r.lat), lon: parseFloat(r.lon) })));
         setOpen(true);
       } catch {
         /* aborted or offline */
