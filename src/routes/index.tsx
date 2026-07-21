@@ -206,7 +206,7 @@ function FormScreen(props: {
   {/* Day */}
   <select
     value={props.day}
-    onChange={(e) => props.setDay(Number(e.target.value))}
+    onChange={(e) => props.setDay(e.target.value)}
     className="border rounded px-2 py-1"
   >
     {[...Array(31)].map((_, i) => (
@@ -219,7 +219,7 @@ function FormScreen(props: {
   {/* Month */}
   <select
     value={props.month}
-    onChange={(e) => props.setMonth(Number(e.target.value))}
+    onChange={(e) => props.setMonth(e.target.value)}
     className="border rounded px-2 py-1"
   >
     {[...Array(12)].map((_, i) => (
@@ -232,7 +232,7 @@ function FormScreen(props: {
   {/* Year */}
   <select
     value={props.year}
-    onChange={(e) => props.setYear(Number(e.target.value))}
+    onChange={(e) => props.setYear(e.target.value)}
     className="border rounded px-2 py-1"
   >
     {Array.from({ length: 201 }, (_, i) => 2026 - i).map((year) => (
@@ -250,7 +250,7 @@ function FormScreen(props: {
     {/* Hour Dropdown (01–12) */}
     <select
       value={props.hour}
-      onChange={(e) => props.setHour(Number(e.target.value))}
+      onChange={(e) => props.setHour(e.target.value)}
       className="px-3 py-2 rounded-xl border border-input bg-background text-sm"
     >
       {Array.from({ length: 12 }, (_, i) => {
@@ -266,7 +266,7 @@ function FormScreen(props: {
     {/* Minute Dropdown (00–59) */}
     <select
       value={props.minute}
-      onChange={(e) => props.setMinute(Number(e.target.value))}
+      onChange={(e) => props.setMinute(e.target.value)}
       className="px-3 py-2 rounded-xl border border-input bg-background text-sm"
     >
       {Array.from({ length: 60 }, (_, i) => (
