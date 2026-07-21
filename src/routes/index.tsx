@@ -802,7 +802,17 @@ function PlaceAutocomplete({
   useEffect(() => {
     if (selected) return; // don't re-query after user picks
     const q = value.trim();
-    if (q.length < 3) { setSuggestions([]); return; }
+    if (q.length < 2) { setSuggestions([]); return; }
+
+    // 1. Instant offline results (India / TN dataset)
+    const offline = searchOfflinePlaces(q, 6).map<PlaceSuggestion>((p: OfflinePlace) => ({
+      display: `${formatOfflinePlace(p)} · (offline)`,
+      lat: p.lat,
+      lon: p.lon,
+    }));
+    if (offline.length) { setSuggestions(offline); setOpen(true); }
+
+    if (q.length < 3) return;
     const handle = setTimeout(async () => {
       abortRef.current?.abort();
       const ac = new AbortController();
@@ -814,7 +824,15 @@ function PlaceAutocomplete({
           { signal: ac.signal, headers: { Accept: "application/json" } },
         );
         const rows = (await res.json()) as Array<{ lat: string; lon: string; display_name: string }>;
-        setSuggestions(rows.map((r) => ({ display: r.display_name, lat: parseFloat(r.lat), lon: parseFloat(r.lon) })));
+        const online = rows.map((r) => ({ display: r.display_name, lat: parseFloat(r.lat), lon: parseFloat(r.lon) }));
+        // Merge, dedupe by rounded coords, keep offline first
+        const seen = new Set(offline.map((s) => `${s.lat.toFixed(2)},${s.lon.toFixed(2)}`));
+        const merged = [...offline];
+        for (const o of online) {
+          const k = `${o.lat.toFixed(2)},${o.lon.toFixed(2)}`;
+          if (!seen.has(k)) { merged.push(o); seen.add(k); }
+        }
+        setSuggestions(merged);
         setOpen(true);
       } catch {
         /* aborted or offline */
