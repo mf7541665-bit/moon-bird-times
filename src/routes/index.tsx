@@ -247,71 +247,14 @@ function FormScreen(props: {
 </div>
             </Field>
 <Field label="பிறந்த நேரம்">
-  <div className="flex items-center gap-3">
-    <Clock className="h-5 w-5 text-muted-foreground shrink-0" />
-
-    {/* Hour Dropdown (01–12) */}
-    <select
-      value={props.hour}
-      onChange={(e) => props.setHour(e.target.value)}
-      className="px-3 py-2 rounded-xl border border-input bg-background text-sm"
-    >
-      {Array.from({ length: 12 }, (_, i) => {
-        const val = i + 1; // 1–12
-        return (
-          <option key={val} value={val}>
-            {String(val).padStart(2, "0")}
-          </option>
-        );
-      })}
-    </select>
-
-    {/* Minute Dropdown (00–59) */}
-    <select
-      value={props.minute}
-      onChange={(e) => props.setMinute(e.target.value)}
-      className="px-3 py-2 rounded-xl border border-input bg-background text-sm"
-    >
-      {Array.from({ length: 60 }, (_, i) => (
-        <option key={i} value={i}>
-          {String(i).padStart(2, "0")}
-        </option>
-      ))}
-    </select>
-
-    {/* AM / PM Toggle */}
-    <div className="flex rounded-xl border border-input overflow-hidden">
-      <button
-        type="button"
-        onClick={() => props.setAmpm("AM")}
-        className={`px-3 py-2 text-sm transition ${
-          props.ampm === "AM" ? "font-semibold" : "opacity-70"
-        }`}
-        style={
-          props.ampm === "AM"
-            ? { background: "var(--brand)", color: "var(--brand-foreground)" }
-            : undefined
-        }
-      >
-        AM
-      </button>
-
-      <button
-        type="button"
-        onClick={() => props.setAmpm("PM")}
-        className={`px-3 py-2 text-sm transition ${
-          props.ampm === "PM" ? "font-semibold" : "opacity-70"
-        }`}
-        style={
-          props.ampm === "PM"
-            ? { background: "var(--brand)", color: "var(--brand-foreground)" }
-            : undefined
-        }
-      >
-        PM
-      </button>
-    </div>
-  </div>
+  <CircularTimePicker
+    hour={props.hour}
+    minute={props.minute}
+    ampm={props.ampm}
+    setHour={props.setHour}
+    setMinute={props.setMinute}
+    setAmpm={props.setAmpm}
+  />
 </Field>
 
             <Field label="பிறந்த இடம்">
