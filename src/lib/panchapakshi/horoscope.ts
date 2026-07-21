@@ -1,6 +1,6 @@
 // Sidereal (Lahiri / Chitrapaksha) horoscope helpers.
 import * as Astronomy from "astronomy-engine";
-import type { Paksha } from "./tables";
+
 
 // ─────────────────────────────────────────────────────────────
 // Names
