@@ -421,10 +421,27 @@ function ActivitiesScreen({
           <Toggle active={dayNight === "night"} onClick={() => setDayNight("night")} label="இரவு" />
         </div>
 
+        {/* Aatchi Pakshi (ruling bird for this block) */}
+        <div className="mb-4 rounded-2xl border border-amber-200 bg-amber-50 p-4 flex items-center gap-3">
+          <span className="text-3xl">{BIRD_EMOJI[block.ruling]}</span>
+          <div className="min-w-0">
+            <p className="text-[11px] font-semibold uppercase tracking-wide text-amber-700">
+              ஆட்சி பட்சி · Ruling Bird
+            </p>
+            <p className="text-base font-bold" style={{ color: "var(--brand-deep)" }}>
+              {BIRDS[block.ruling].ta} <span className="text-muted-foreground font-medium">({BIRDS[block.ruling].en})</span>
+            </p>
+            <p className="text-[11px] text-muted-foreground mt-0.5">
+              {dayNight === "day" ? "பகல்" : "இரவு"} · {data.paksha === "valarpirai" ? "வளர் பிறை" : "தேய் பிறை"} · {["ஞாயிறு","திங்கள்","செவ்வாய்","புதன்","வியாழன்","வெள்ளி","சனி"][data.weekday]}
+              {block.ruling === data.birthBird && <span className="ml-2 text-emerald-700 font-semibold">· உங்கள் ஜென்ம பட்சி</span>}
+            </p>
+          </div>
+        </div>
+
         {/* Date + Paksha */}
         <div className="text-center mb-4 text-xs text-muted-foreground">
           {viewDate.split("-").reverse().join("-")} ·{" "}
-          {data.paksha === "valarpirai" ? "வளர் பிறை" : "தேய் பிறை"}
+          {data.paksha === "valarpirai" ? "வளர் பிறை" : "தேய் பிறை"} · ஒவ்வொரு தொழிலும் 2 மணி 24 நிமிடம்
         </div>
 
         {/* Slots */}

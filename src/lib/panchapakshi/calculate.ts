@@ -90,18 +90,18 @@ function findSunEvent(
   return evt.date;
 }
 
+/** Each tholil (main activity slot) is a constant 2h 24m (144 minutes). */
+export const THOLIL_SLOT_MS = 144 * 60 * 1000;
+
 function buildBlock(
   weekday: number,
   paksha: Paksha,
   dn: DayNight,
   start: Date,
-  end: Date,
 ): DayBlock {
-  const totalMs = end.getTime() - start.getTime();
-  const slotMs = totalMs / 5; // EQUAL time slots per reference chart
   const slots = Array.from({ length: 5 }, (_, j) => {
-    const s = new Date(start.getTime() + slotMs * j);
-    const e = new Date(start.getTime() + slotMs * (j + 1));
+    const s = new Date(start.getTime() + THOLIL_SLOT_MS * j);
+    const e = new Date(start.getTime() + THOLIL_SLOT_MS * (j + 1));
     const birdActivities = {} as Record<BirdKey, ActivityKey>;
     for (const b of BIRD_ORDER[paksha]) {
       birdActivities[b] = activityFor(weekday, paksha, dn, b, j);
@@ -160,8 +160,10 @@ export function computePanchapakshi(input: BirthInput): PanchapakshiResult {
   const localSunrise = new Date(sunrise.getTime() + input.tzOffsetMin * 60_000);
   const weekday = localSunrise.getUTCDay();
 
-  const day = buildBlock(weekday, paksha, "day", sunrise, sunset);
-  const night = buildBlock(weekday, paksha, "night", sunset, nextSunrise);
+  // Tholil slots are anchored to sunrise only. Each block is fixed 5 × 2h24m = 12h.
+  const nightStart = new Date(sunrise.getTime() + 5 * THOLIL_SLOT_MS);
+  const day = buildBlock(weekday, paksha, "day", sunrise);
+  const night = buildBlock(weekday, paksha, "night", nightStart);
 
   return { birthBird, paksha, tithi, weekday, sunrise, sunset, nextSunrise, day, night, horoscope };
 }
