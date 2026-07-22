@@ -101,6 +101,14 @@ function PanchapakshiPage() {
 
   function onSubmit(e: React.FormEvent) {
     e.preventDefault();
+    const d = parseInt(day, 10), m = parseInt(month, 10), y = parseInt(year, 10);
+    const hh = parseInt(hour, 10), mm = parseInt(minute, 10);
+    if (!name.trim()) return alert("பெயரை உள்ளிடவும் (Enter name)");
+    if (!Number.isFinite(d) || !Number.isFinite(m) || !Number.isFinite(y))
+      return alert("பிறந்த தேதியை முழுமையாக தேர்ந்தெடுக்கவும் (Select full date of birth)");
+    if (!Number.isFinite(hh) || !Number.isFinite(mm))
+      return alert("பிறந்த நேரத்தை தேர்ந்தெடுக்கவும் (Select time of birth)");
+    if (!place.trim()) return alert("பிறந்த இடத்தை உள்ளிடவும் (Enter place of birth)");
     submit(viewDate, true);
   }
 
