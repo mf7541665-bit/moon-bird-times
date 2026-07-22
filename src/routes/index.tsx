@@ -554,47 +554,39 @@ function DetailScreen({
 
   const SUB_ORDER: readonly ActivityKey[] = SUB_ORDERS[paksha];
 
-  // ✅ Exact Minutes (Replace with your chart values if needed)
-  const SUB_DURATION_MINUTES: Record<
+  // ✅ Fixed durations per activity (minutes) — constants per paksha + day/night
+  const SUB_DURATION_BY_ACTIVITY: Record<
     "valarpirai" | "theipirai",
-    Record<"day" | "night", number[]>
+    Record<"day" | "night", Record<ActivityKey, number>>
   > = {
     valarpirai: {
-      day: [30, 36, 48, 18, 12],
-      night: [30, 30, 24, 24, 36],
+      day:   { eat: 30, walk: 36, rule: 48, sleep: 18, die: 12 },
+      night: { eat: 30, walk: 30, rule: 24, sleep: 24, die: 36 },
     },
     theipirai: {
-      day: [12, 36, 30, 18, 48],
-      night: [18, 42, 24, 18, 42],
+      day:   { sleep: 12, walk: 36, die: 30, rule: 18, eat: 48 },
+      night: { sleep: 18, walk: 42, die: 24, rule: 18, eat: 42 },
     },
   };
 
-  const DURATIONS = SUB_DURATION_MINUTES[paksha][dayType];
+  const DURATION_MAP = SUB_DURATION_BY_ACTIVITY[paksha][dayType];
 
-  // ✅ Generate Sub Slots using MINUTES
+  // ✅ Generate Sub Slots using per-activity MINUTES
   let cursor = new Date(slot.start).getTime();
 
-  const subSlots = SUB_ORDER.map((act, i) => {
+  const subSlots = SUB_ORDER.map((act) => {
     const start = new Date(cursor);
-
-    cursor += DURATIONS[i] * 60 * 1000; // ✅ minutes → milliseconds
-
+    cursor += DURATION_MAP[act] * 60 * 1000;
     const end = new Date(cursor);
-
-    return {
-      activity: act,
-      start,
-      end,
-    };
+    return { activity: act, start, end };
   });
 
-  // ✅ Optional validation (VERY IMPORTANT)
+  // ✅ Optional validation
   const totalSlotMinutes =
-    (new Date(slot.end).getTime() -
-      new Date(slot.start).getTime()) /
-    60000;
+    (new Date(slot.end).getTime() - new Date(slot.start).getTime()) / 60000;
 
-  const sum = DURATIONS.reduce((a, b) => a + b, 0);
+  const sum = SUB_ORDER.reduce((a, act) => a + DURATION_MAP[act], 0);
+
 
   if (Math.abs(sum - totalSlotMinutes) > 0.5) {
     console.warn(
@@ -632,7 +624,7 @@ function DetailScreen({
         </div>
 
         <p className="mt-4 text-xs text-muted-foreground leading-relaxed px-2">
-          சூட்சம பட்சி நேரங்கள் முதன்மை நிலையின் நேரத்தை பாரம்பரிய 5:4:2:1.5:3.5 விகிதத்தில் பிரித்து கணிக்கப்பட்டவை.
+          சூட்சம பட்சி நேரங்கள் பாரம்பரிய நிமிட அளவுகளின்படி (பக்ஷம் + பகல்/இரவு) கணிக்கப்பட்டவை.
         </p>
       </div>
     </main>
