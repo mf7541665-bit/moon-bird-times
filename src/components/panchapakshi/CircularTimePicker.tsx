@@ -26,8 +26,40 @@ export function CircularTimePicker({
   const h = clampInt(hour, 1, 12, 6);
   const m = clampInt(minute, 0, 59, 0);
 
+  function handleQuickTimeChange(value: string) {
+    const [rawHour, rawMinute] = value.split(":").map(Number);
+    if (!Number.isFinite(rawHour) || !Number.isFinite(rawMinute)) return;
+
+    const nextAmpm = rawHour >= 12 ? "PM" : "AM";
+    const nextHour = rawHour % 12 || 12;
+    setHour(String(nextHour));
+    setMinute(String(rawMinute));
+    setAmpm(nextAmpm);
+  }
+
   return (
     <div className="flex flex-col items-center gap-4 py-2">
+      {/* Quick entry for users who prefer a standard time field */}
+      <div className="w-full rounded-2xl border border-border/70 bg-secondary/40 p-3">
+        <div className="flex items-center justify-between gap-3">
+          <div>
+            <p className="text-sm font-semibold text-foreground">விரைவு நேரத் தேர்வு</p>
+            <p className="text-xs text-muted-foreground">நேரத்தை நேரடியாக உள்ளிடலாம்</p>
+          </div>
+          <input
+            type="time"
+            value={toTimeValue(h, m, ampm)}
+            onChange={(e) => handleQuickTimeChange(e.target.value)}
+            aria-label="பிறந்த நேரத்தை நேரடியாக தேர்வு செய்யவும்"
+            className="h-11 rounded-xl border border-input bg-background px-3 text-base font-semibold tabular-nums text-foreground outline-none focus:ring-2 focus:ring-ring"
+          />
+        </div>
+      </div>
+
+      <details className="w-full rounded-2xl border border-border/70 bg-background px-3 py-2">
+        <summary className="cursor-pointer list-none text-center text-sm font-semibold text-muted-foreground">
+          அல்லது கடிகாரத்தில் தேர்வு செய்யவும்
+        </summary>
       {/* Digital readout */}
       <div className="inline-flex items-center gap-2 rounded-full border border-input bg-background px-4 py-2 shadow-sm">
         <Clock className="h-4 w-4 text-muted-foreground" />
@@ -80,6 +112,7 @@ export function CircularTimePicker({
           accent="var(--brand)"
         />
       </div>
+      </details>
     </div>
   );
 }
@@ -240,6 +273,12 @@ function arcPath(cx: number, cy: number, radius: number, a0: number, a1: number)
 function pad(n: number) {
   return n.toString().padStart(2, "0");
 }
+
+function toTimeValue(hour: number, minute: number, ampm: "AM" | "PM") {
+  const hour24 = (hour % 12) + (ampm === "PM" ? 12 : 0);
+  return `${pad(hour24)}:${pad(minute)}`;
+}
+
 function clampInt(s: string, min: number, max: number, fallback: number) {
   const n = parseInt(s, 10);
   if (Number.isNaN(n)) return fallback;
