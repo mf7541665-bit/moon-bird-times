@@ -13,6 +13,22 @@ import { PadupatchiCard } from "@/components/panchapakshi/PadupatchiCard";
 
 
 export const Route = createFileRoute("/")({
+  head: () => ({
+    meta: [
+      { title: "பஞ்சபக்ஷி நேரக் கணிப்பு | Panchapakshi" },
+      {
+        name: "description",
+        content: "பிறந்த நேரத்தை எளிதாக உள்ளிட்டு ஜென்ம பட்சி மற்றும் பஞ்சபக்ஷி கணிப்புகளை அறியுங்கள்.",
+      },
+      { property: "og:title", content: "பஞ்சபக்ஷி நேரக் கணிப்பு | Panchapakshi" },
+      {
+        property: "og:description",
+        content: "பிறந்த தேதி, நேரம், இடத்தை உள்ளிட்டு உங்கள் ஜென்ம பட்சி கணிப்பை பார்க்கவும்.",
+      },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary_large_image" },
+    ],
+  }),
   component: PanchapakshiPage,
 });
 
