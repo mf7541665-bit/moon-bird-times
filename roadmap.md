@@ -1,3 +1,3 @@
-- [ ] Add page-specific structured data and Google Search metadata.
-- [ ] Connect Google Search Console and review available indexing/performance data.
-- [ ] Verify metadata and update this roadmap with completion or any external blocker.
+- [x] Add page-specific structured data and Google Search metadata.
+- [ ] Connect Google Search Console and review indexing/performance data (blocked: connection approval was declined).
+- [x] Verify metadata and build output.
