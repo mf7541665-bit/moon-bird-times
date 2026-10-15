@@ -80,18 +80,9 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "பஞ்சபட்சி சாஸ்திரம் - Panchapakshi Shastra" },
-      { name: "description", content: "Find your Panchapakshi birth bird and daily activity schedule based on Tamil Panchapakshi Shastra, calculated from your birth date, time and place." },
       { name: "author", content: "Panchapakshi" },
       { name: "google-adsense-account", content: "ca-pub-4563342995680482" },
-      { property: "og:title", content: "பஞ்சபட்சி சாஸ்திரம் - Panchapakshi Shastra" },
-      { property: "og:description", content: "Find your Panchapakshi birth bird and daily activity schedule based on Tamil Panchapakshi Shastra, calculated from your birth date, time and place." },
       { property: "og:type", content: "website" },
-      { name: "twitter:card", content: "summary_large_image" },
-      { name: "twitter:title", content: "பஞ்சபட்சி சாஸ்திரம் - Panchapakshi Shastra" },
-      { name: "twitter:description", content: "Find your Panchapakshi birth bird and daily activity schedule based on Tamil Panchapakshi Shastra, calculated from your birth date, time and place." },
-      { property: "og:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/0466d4ae-3759-43b5-b937-97115ae3c246/id-preview-b282ddb3--3884cd88-6362-4d42-9d42-555a3710040f.lovable.app-1784360954155.png" },
-      { name: "twitter:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/0466d4ae-3759-43b5-b937-97115ae3c246/id-preview-b282ddb3--3884cd88-6362-4d42-9d42-555a3710040f.lovable.app-1784360954155.png" },
     ],
     links: [
       { rel: "stylesheet", href: appCss },
