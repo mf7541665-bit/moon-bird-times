@@ -6,8 +6,9 @@ import {
   useRouter,
   HeadContent,
   Scripts,
+  type ErrorComponentProps,
 } from "@tanstack/react-router";
-import { useEffect, type ReactNode } from "react";
+import { lazy, useEffect, type ReactNode } from "react";
 
 import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
@@ -34,7 +35,7 @@ function NotFoundComponent() {
   );
 }
 
-function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
+function ErrorScreen({ error, reset }: ErrorComponentProps) {
   console.error(error);
   const router = useRouter();
   useEffect(() => {
@@ -72,6 +73,8 @@ function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
   );
 }
 
+const ErrorComponent = lazy(() => Promise.resolve({ default: ErrorScreen }));
+
 export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()({
   head: () => ({
     meta: [
@@ -80,6 +83,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { title: "பஞ்சபட்சி சாஸ்திரம் - Panchapakshi Shastra" },
       { name: "description", content: "Find your Panchapakshi birth bird and daily activity schedule based on Tamil Panchapakshi Shastra, calculated from your birth date, time and place." },
       { name: "author", content: "Panchapakshi" },
+      { name: "google-adsense-account", content: "ca-pub-4563342995680482" },
       { property: "og:title", content: "பஞ்சபட்சி சாஸ்திரம் - Panchapakshi Shastra" },
       { property: "og:description", content: "Find your Panchapakshi birth bird and daily activity schedule based on Tamil Panchapakshi Shastra, calculated from your birth date, time and place." },
       { property: "og:type", content: "website" },
