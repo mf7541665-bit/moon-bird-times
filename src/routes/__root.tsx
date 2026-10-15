@@ -80,6 +80,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { title: "பஞ்சபட்சி சாஸ்திரம் - Panchapakshi Shastra" },
       { name: "description", content: "Find your Panchapakshi birth bird and daily activity schedule based on Tamil Panchapakshi Shastra, calculated from your birth date, time and place." },
       { name: "author", content: "Panchapakshi" },
+      { name: "google-adsense-account", content: "ca-pub-4563342995680482" },
       { property: "og:title", content: "பஞ்சபட்சி சாஸ்திரம் - Panchapakshi Shastra" },
       { property: "og:description", content: "Find your Panchapakshi birth bird and daily activity schedule based on Tamil Panchapakshi Shastra, calculated from your birth date, time and place." },
       { property: "og:type", content: "website" },
