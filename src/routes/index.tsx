@@ -26,7 +26,30 @@ export const Route = createFileRoute("/")({
         content: "பிறந்த தேதி, நேரம், இடத்தை உள்ளிட்டு உங்கள் ஜென்ம பட்சி கணிப்பை பார்க்கவும்.",
       },
       { property: "og:type", content: "website" },
+      { property: "og:url", content: "https://urpanjapakshi.lovable.app/" },
       { name: "twitter:card", content: "summary_large_image" },
+      { name: "twitter:title", content: "பஞ்சபக்ஷி நேரக் கணிப்பு | Panchapakshi" },
+      {
+        name: "twitter:description",
+        content: "பிறந்த தேதி, நேரம், இடத்தை உள்ளிட்டு உங்கள் ஜென்ம பட்சி கணிப்பை பார்க்கவும்.",
+      },
+    ],
+    links: [{ rel: "canonical", href: "https://urpanjapakshi.lovable.app/" }],
+    scripts: [
+      {
+        type: "application/ld+json",
+        children: JSON.stringify({
+          "@context": "https://schema.org",
+          "@type": "WebApplication",
+          name: "பஞ்சபக்ஷி நேரக் கணிப்பு | Panchapakshi",
+          url: "https://urpanjapakshi.lovable.app/",
+          description:
+            "பிறந்த தேதி, நேரம், இடத்தை உள்ளிட்டு உங்கள் ஜென்ம பட்சி கணிப்பை பார்க்கவும்.",
+          applicationCategory: "LifestyleApplication",
+          operatingSystem: "Any",
+          inLanguage: ["ta", "en"],
+        }),
+      },
     ],
   }),
   component: PanchapakshiPage,

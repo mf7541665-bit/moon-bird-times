@@ -1,0 +1,3 @@
+- [ ] Add page-specific structured data and Google Search metadata.
+- [ ] Connect Google Search Console and review available indexing/performance data.
+- [ ] Verify metadata and update this roadmap with completion or any external blocker.
